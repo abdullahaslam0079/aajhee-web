@@ -1,26 +1,199 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ink: #1c1c1f;
+  --muted: #6a6a73;
+  --line: #ececef;
+  --paper: #f3f1f0;
+  --surface: #ffffff;
+  --deal: #7a3e3e;
+  --deal-deep: #5c2d30;
+  --deal-soft: #f3e7e7;
+  --deal-ink: #4a2424;
+  --gold: #c9a227;
+  --radius-control: 0.75rem;
+  --radius-card: 1rem;
+  --shadow: 0 1px 2px rgba(28, 28, 31, 0.04), 0 10px 28px rgba(28, 28, 31, 0.06);
+  --shadow-hover: 0 2px 6px rgba(28, 28, 31, 0.06), 0 16px 36px rgba(28, 28, 31, 0.1);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-deal: var(--deal);
+  --color-deal-deep: var(--deal-deep);
+  --color-deal-soft: var(--deal-soft);
+  --color-deal-ink: var(--deal-ink);
+  --color-gold: var(--gold);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-fraunces);
+  --shadow-card: var(--shadow);
+  --shadow-lift: var(--shadow-hover);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 480px at 50% -120px, rgba(122, 62, 62, 0.08), transparent 60%),
+      var(--paper);
+    color: var(--ink);
+    font-family: var(--font-inter), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  img {
+    max-width: 100%;
+    display: block;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.hide-scroll {
+  scrollbar-width: none;
+}
+
+.hide-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+  outline: 1px solid rgba(28, 28, 31, 0.06);
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #ececec 0%, #f7f7f7 45%, #ececec 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.leaflet-container {
+  font-family: inherit;
+  background: #e8e6e4;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow);
+}
+
+.leaflet-popup-content {
+  margin: 10px 14px;
+  font-size: 13px;
+}
+
+.leaflet-div-icon.goluto-marker-wrap {
+  background: transparent;
+  border: none;
+}
+
+.goluto-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 72px;
+  filter: drop-shadow(0 2px 5px rgba(28, 28, 31, 0.16));
+}
+
+.goluto-marker-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px 7px 7px;
+  background: #fff;
+  border: 1px solid #e4e4ea;
+  border-radius: 18px;
+  white-space: nowrap;
+}
+
+.goluto-marker-icon {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+}
+
+.goluto-marker-label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.goluto-marker-pointer {
+  width: 0;
+  height: 0;
+  margin-top: -1px;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 11px solid #fff;
+  filter: drop-shadow(0 1px 0 #e4e4ea);
+}
+
+.goluto-marker-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 2px;
+  border: 1px solid #e4e4ea;
+  border-radius: 999px;
+  background: var(--ink);
+}
+
+.goluto-marker-wrap:hover .goluto-marker-pill {
+  border-color: var(--ink);
+}
+
+.leaflet-tooltip {
+  border: 0;
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+}
+
+::selection {
+  background: var(--deal-soft);
+  color: var(--deal-ink);
 }
