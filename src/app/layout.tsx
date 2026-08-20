@@ -15,7 +15,13 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "Goluto — Sparen in Deutschland",
   description: "Angebote im Laden und online. Für Deutschland.",
-  icons: { icon: "/icon.png" },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png" },
+    ],
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({

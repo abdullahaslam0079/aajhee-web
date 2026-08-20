@@ -18,6 +18,9 @@ export function errorMessage(error: unknown, fallback = "Something went wrong.")
     }
     return error.message || fallback;
   }
+  if (error instanceof TypeError && /failed to fetch/i.test(error.message)) {
+    return "Could not reach the Goluto API. Add https://goluto.de to CORS_ALLOWED_ORIGINS on the backend.";
+  }
   if (error instanceof Error && error.message) return error.message;
   return fallback;
 }
