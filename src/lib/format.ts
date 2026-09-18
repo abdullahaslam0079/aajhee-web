@@ -26,9 +26,9 @@ export function km(value?: number | null) {
 }
 
 export function displayName(user: { first_name?: string; last_name?: string; name?: string; email?: string } | null) {
-  if (!user) return "Goluto";
+  if (!user) return "Aajhee";
   const full = [user.first_name, user.last_name].filter(Boolean).join(" ").trim();
-  return user.name || full || user.email || "Goluto";
+  return user.name || full || user.email || "Aajhee";
 }
 
 export function channelOf(offer: Offer): "online" | "inStore" {

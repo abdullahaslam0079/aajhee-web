@@ -13,7 +13,7 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Goluto — Sparen in Deutschland",
+  title: "Aajhee — Sparen in Deutschland",
   description: "Angebote im Laden und online. Für Deutschland.",
   icons: {
     icon: [

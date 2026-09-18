@@ -58,7 +58,7 @@ export default function NotificationsPage() {
               }`}
             >
               <div className="flex items-start justify-between gap-3">
-                <p className="font-bold">{item.title || "Goluto"}</p>
+                <p className="font-bold">{item.title || "Aajhee"}</p>
                 {item.created_at ? (
                   <span className="shrink-0 text-xs text-muted">
                     {new Date(item.created_at).toLocaleDateString("de-DE")}

@@ -1,7 +1,7 @@
-const ACCESS_KEY = "goluto.access";
-const REFRESH_KEY = "goluto.refresh";
-const USER_KEY = "goluto.user";
-const ROLE_KEY = "goluto.role";
+const ACCESS_KEY = "aajhee.access";
+const REFRESH_KEY = "aajhee.refresh";
+const USER_KEY = "aajhee.user";
+const ROLE_KEY = "aajhee.role";
 
 export type Role = "consumer" | "business";
 
@@ -48,7 +48,7 @@ export function setSession(payload: {
   localStorage.setItem(ROLE_KEY, payload.role);
   userRaw = localStorage.getItem(USER_KEY);
   userCache = payload.user;
-  window.dispatchEvent(new Event("goluto-auth"));
+  window.dispatchEvent(new Event("aajhee-auth"));
 }
 
 export function clearSession() {
@@ -58,7 +58,7 @@ export function clearSession() {
   localStorage.removeItem(ROLE_KEY);
   userRaw = null;
   userCache = null;
-  window.dispatchEvent(new Event("goluto-auth"));
+  window.dispatchEvent(new Event("aajhee-auth"));
 }
 
 export function isLoggedIn() {

@@ -46,7 +46,7 @@ export default function SettingsPage() {
         <div className="min-w-0">
           <p className="truncate text-xl font-extrabold">{name}</p>
           <p className="truncate text-sm text-muted">
-            {user?.phone || (user?.email && !user.email.includes(".goluto.local") ? user.email : "Browse deals without an account")}
+            {user?.phone || (user?.email && !user.email.includes(".aajhee.local") ? user.email : "Browse deals without an account")}
           </p>
           <p className="mt-1 text-sm text-muted">{loc.label || "Berlin"}</p>
         </div>

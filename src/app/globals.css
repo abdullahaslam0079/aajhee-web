@@ -118,12 +118,12 @@
   font-size: 13px;
 }
 
-.leaflet-div-icon.goluto-marker-wrap {
+.leaflet-div-icon.aajhee-marker-wrap {
   background: transparent;
   border: none;
 }
 
-.goluto-marker {
+.aajhee-marker {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -132,7 +132,7 @@
   filter: drop-shadow(0 2px 5px rgba(28, 28, 31, 0.16));
 }
 
-.goluto-marker-pill {
+.aajhee-marker-pill {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -143,7 +143,7 @@
   white-space: nowrap;
 }
 
-.goluto-marker-icon {
+.aajhee-marker-icon {
   display: grid;
   width: 22px;
   height: 22px;
@@ -153,14 +153,14 @@
   color: #fff;
 }
 
-.goluto-marker-label {
+.aajhee-marker-label {
   font-size: 13px;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--ink);
 }
 
-.goluto-marker-pointer {
+.aajhee-marker-pointer {
   width: 0;
   height: 0;
   margin-top: -1px;
@@ -170,7 +170,7 @@
   filter: drop-shadow(0 1px 0 #e4e4ea);
 }
 
-.goluto-marker-dot {
+.aajhee-marker-dot {
   width: 8px;
   height: 8px;
   margin-top: 2px;
@@ -179,7 +179,7 @@
   background: var(--ink);
 }
 
-.goluto-marker-wrap:hover .goluto-marker-pill {
+.aajhee-marker-wrap:hover .aajhee-marker-pill {
   border-color: var(--ink);
 }
 

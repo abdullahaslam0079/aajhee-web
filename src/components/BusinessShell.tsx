@@ -33,7 +33,7 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <Link href="/business" className="flex items-center gap-2.5">
             <img src="/icon.png" alt="" className="h-8 w-8 rounded-lg shadow-sm ring-1 ring-black/5" />
-            <span className="font-display font-semibold tracking-tight">Goluto Business</span>
+            <span className="font-display font-semibold tracking-tight">Aajhee Business</span>
           </Link>
           <nav className="flex items-center gap-1 rounded-xl bg-paper p-1">
             {links.map((link) => {

@@ -6,7 +6,7 @@ import { channelOf, km, money, offerImage, percent, savings } from "@/lib/format
 
 function rememberOffer(offer: Offer) {
   if (typeof window === "undefined") return;
-  sessionStorage.setItem(`goluto.offer.${offer.id}`, JSON.stringify(offer));
+  sessionStorage.setItem(`aajhee.offer.${offer.id}`, JSON.stringify(offer));
 }
 
 function ChannelBadge({ channel }: { channel: "online" | "inStore" }) {

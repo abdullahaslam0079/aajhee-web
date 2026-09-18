@@ -18,7 +18,7 @@ export function AuthCard({
         <div className="absolute -bottom-16 -right-10 h-80 w-80 rounded-full bg-black/20" />
         <Link href="/" className="relative z-10 flex items-center gap-3">
           <img src="/icon.png" alt="" className="h-11 w-11 rounded-xl bg-white" />
-          <span className="font-display text-2xl font-semibold">Goluto</span>
+          <span className="font-display text-2xl font-semibold">Aajhee</span>
         </Link>
         <div className="relative z-10 max-w-md">
           <p className="font-display text-4xl font-semibold leading-tight">Sparen in Deutschland.</p>
@@ -33,7 +33,7 @@ export function AuthCard({
         <div className="w-full max-w-md rounded-2xl bg-white p-7 shadow-lift outline outline-1 outline-black/5 lg:shadow-none lg:outline-none">
           <Link href="/" className="mb-6 flex items-center gap-2.5 lg:hidden">
             <img src="/icon.png" alt="" className="h-10 w-10 rounded-xl shadow-sm ring-1 ring-black/5" />
-            <span className="font-display text-lg font-semibold tracking-tight">Goluto</span>
+            <span className="font-display text-lg font-semibold tracking-tight">Aajhee</span>
           </Link>
           <h1 className="font-display text-3xl font-semibold tracking-tight">{title}</h1>
           {subtitle ? <p className="mt-2 text-sm leading-6 text-muted">{subtitle}</p> : null}

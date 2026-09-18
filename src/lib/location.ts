@@ -1,7 +1,7 @@
 export const DEFAULT_LAT = Number(process.env.NEXT_PUBLIC_DEFAULT_LAT || 52.52);
 export const DEFAULT_LNG = Number(process.env.NEXT_PUBLIC_DEFAULT_LNG || 13.405);
 
-const KEY = "goluto.location";
+const KEY = "aajhee.location";
 const FALLBACK: GeoPoint = {
   latitude: DEFAULT_LAT,
   longitude: DEFAULT_LNG,
@@ -43,7 +43,7 @@ export function getSavedLocation(): GeoPoint {
 export function setSavedLocation(point: GeoPoint) {
   cached = point;
   localStorage.setItem(KEY, JSON.stringify(point));
-  window.dispatchEvent(new Event("goluto-location"));
+  window.dispatchEvent(new Event("aajhee-location"));
 }
 
 export function locationQuery(point = getSavedLocation()) {

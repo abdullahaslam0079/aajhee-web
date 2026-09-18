@@ -2,7 +2,7 @@ import { clearSession, getAccessToken } from "./auth";
 
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
-  "https://api.goluto.de";
+  "https://api.aajhee.com";
 
 export class ApiError extends Error {
   status: number;

@@ -5,10 +5,10 @@ import { getRole, getUser, isLoggedIn } from "@/lib/auth";
 import type { User } from "@/lib/types";
 
 function subscribe(cb: () => void) {
-  window.addEventListener("goluto-auth", cb);
+  window.addEventListener("aajhee-auth", cb);
   window.addEventListener("storage", cb);
   return () => {
-    window.removeEventListener("goluto-auth", cb);
+    window.removeEventListener("aajhee-auth", cb);
     window.removeEventListener("storage", cb);
   };
 }

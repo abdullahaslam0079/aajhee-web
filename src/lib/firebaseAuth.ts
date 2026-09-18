@@ -132,7 +132,7 @@ export function mapFirebaseError(error: unknown) {
       return "Firebase web config looks wrong. Check NEXT_PUBLIC_FIREBASE_* in .env.local.";
     default:
       if (/failed to fetch/i.test(message)) {
-        return "Could not reach the Goluto API from this domain. On Render goluto-backend, set CORS_ALLOWED_ORIGINS to include https://goluto.de.";
+        return "Could not reach the Aajhee API from this domain. On Render aajhee-backend, set CORS_ALLOWED_ORIGINS to include https://aajhee.com.";
       }
       if (/database is closing/i.test(message) || /closing\/hidden/i.test(message)) {
         return "Sign-in could not finish in this browser view. Open http://localhost:3000/login in Chrome or Safari and try again.";

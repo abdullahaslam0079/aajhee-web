@@ -29,7 +29,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-2.5 md:py-3">
           <Link href="/" className="flex shrink-0 items-center gap-2.5">
             <img src="/icon.png" alt="" className="h-9 w-9 rounded-xl shadow-sm ring-1 ring-black/5" />
-            <span className="font-display text-[1.15rem] font-semibold tracking-tight">Goluto</span>
+            <span className="font-display text-[1.15rem] font-semibold tracking-tight">Aajhee</span>
           </Link>
           <nav className="hidden items-center gap-1 rounded-xl bg-paper p-1 md:flex">
             {tabs.map((tab) => {

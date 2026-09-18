@@ -60,7 +60,7 @@ export default function EditProfilePage() {
         <Field label="Email">
           <input
             className={inputClass}
-            value={user?.email?.includes(".goluto.local") ? "" : user?.email || ""}
+            value={user?.email?.includes(".aajhee.local") ? "" : user?.email || ""}
             disabled
           />
         </Field>

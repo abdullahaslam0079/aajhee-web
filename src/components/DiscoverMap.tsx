@@ -22,13 +22,13 @@ function escapeHtml(value: string) {
 }
 
 function markerHtml(label: string) {
-  return `<div class="goluto-marker">
-    <div class="goluto-marker-pill">
-      <span class="goluto-marker-icon">${TAG_SVG}</span>
-      <span class="goluto-marker-label">${escapeHtml(label)}</span>
+  return `<div class="aajhee-marker">
+    <div class="aajhee-marker-pill">
+      <span class="aajhee-marker-icon">${TAG_SVG}</span>
+      <span class="aajhee-marker-label">${escapeHtml(label)}</span>
     </div>
-    <span class="goluto-marker-pointer"></span>
-    <span class="goluto-marker-dot"></span>
+    <span class="aajhee-marker-pointer"></span>
+    <span class="aajhee-marker-dot"></span>
   </div>`;
 }
 
@@ -65,7 +65,7 @@ export function DiscoverMap({ branches, center, onSelect }: Props) {
         const off = percent(branch.highest_discount_percent);
         const label = off ? `${off} off` : "Deal";
         const icon = L.divIcon({
-          className: "goluto-marker-wrap",
+          className: "aajhee-marker-wrap",
           html: markerHtml(label),
           iconSize: [168, 72],
           iconAnchor: [84, 70],

@@ -24,7 +24,7 @@ export default function OfferDetailPage() {
     let cancelled = false;
     async function load() {
       try {
-        const cached = sessionStorage.getItem(`goluto.offer.${id}`);
+        const cached = sessionStorage.getItem(`aajhee.offer.${id}`);
         if (cached) {
           const parsed = JSON.parse(cached) as Offer;
           if (!cancelled) {

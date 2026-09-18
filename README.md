@@ -1,6 +1,6 @@
-# Goluto web app
+# Aajhee web app
 
-Consumer + merchant web client for the Goluto API (`https://api.goluto.de`). This is a separate Next.js app — it is not the marketing site in `GoLuto-backend/website`.
+Consumer + merchant web client for the Aajhee API (`https://api.aajhee.com`). This is a separate Next.js app — it is not the marketing site in `Aajhee-backend/website`.
 
 ## What it covers
 
@@ -17,7 +17,7 @@ Online offers open the shop URL. In-store offers are shown at the counter (no sc
 ## Run locally
 
 ```bash
-cd goluto-web
+cd aajhee-web
 cp .env.example .env.local   # already defaults to the live API
 npm install
 npm run dev
@@ -40,7 +40,7 @@ CORS on the API already allows `localhost`.
 
 ### Firebase web setup
 
-The mobile apps already use project `goluto-c5020`. The web client needs a **Web app** in that same project.
+The mobile apps already use project `aajhee`. The web client needs a **Web app** in that same project.
 
 1. Firebase Console → Project settings → Your apps → **Add app → Web**.
 2. Copy the `appId` into `.env.local` as `NEXT_PUBLIC_FIREBASE_APP_ID`.
