@@ -9,9 +9,8 @@ import { useAuth } from "@/lib/useAuth";
 const links = [
   { href: "/business", label: "Dashboard" },
   { href: "/business/branches", label: "Branches" },
-  { href: "/business/products", label: "Products" },
+  { href: "/business/products", label: "Listings" },
   { href: "/business/orders", label: "Orders" },
-  { href: "/business/offers", label: "Offers" },
 ];
 
 export function BusinessShell({ children }: { children: React.ReactNode }) {
