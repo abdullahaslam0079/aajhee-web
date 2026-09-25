@@ -73,14 +73,19 @@ export function ErrorBox({ message, onRetry }: { message: string; onRetry?: () =
 
 export function PageHeader({
   title,
+  subtitle,
   action,
 }: {
   title: string;
+  subtitle?: string;
   action?: { href: string; label: string };
 }) {
   return (
     <div className="mb-5 flex items-center justify-between gap-3">
-      <h1 className="font-display text-2xl font-semibold tracking-tight">{title}</h1>
+      <div>
+        <h1 className="font-display text-2xl font-semibold tracking-tight">{title}</h1>
+        {subtitle ? <p className="mt-1 text-sm text-muted">{subtitle}</p> : null}
+      </div>
       {action ? (
         <Link
           href={action.href}
