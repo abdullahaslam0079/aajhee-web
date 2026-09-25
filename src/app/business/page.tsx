@@ -50,7 +50,7 @@ export default function BusinessDashboardPage() {
         <Stat label="Active offers" value={stats.active} />
         <Stat label="In-store uses" value={stats.avails} />
       </div>
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
         <section className="rounded-2xl bg-white p-5 shadow-card outline outline-1 outline-black/5">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-extrabold">Branches</h2>
@@ -68,18 +68,21 @@ export default function BusinessDashboardPage() {
         </section>
         <section className="rounded-2xl bg-white p-5 shadow-card outline outline-1 outline-black/5">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-extrabold">Offers</h2>
-            <Link href="/business/offers" className="text-sm font-semibold text-deal">
+            <h2 className="font-extrabold">Products</h2>
+            <Link href="/business/products" className="text-sm font-semibold text-deal">
               Manage
             </Link>
           </div>
-          {offers.length === 0 ? <Empty title="No offers yet" /> : null}
-          {offers.slice(0, 4).map((offer) => (
-            <p key={offer.id} className="border-t border-line py-2 text-sm">
-              <span className="font-semibold">{offer.title}</span>
-              <span className="text-muted"> · {offer.is_online ? "Online" : "In-store"}</span>
-            </p>
-          ))}
+          <p className="text-sm text-muted">Create catalog items and discounts.</p>
+        </section>
+        <section className="rounded-2xl bg-white p-5 shadow-card outline outline-1 outline-black/5">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-extrabold">Orders</h2>
+            <Link href="/business/orders" className="text-sm font-semibold text-deal">
+              Manage
+            </Link>
+          </div>
+          <p className="text-sm text-muted">Accept orders and confirm payments.</p>
         </section>
       </div>
     </div>

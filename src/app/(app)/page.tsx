@@ -23,6 +23,34 @@ export default function HomePage() {
   const [offersLoading, setOffersLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [productFeeds, setProductFeeds] = useState<{
+    top_picks: Array<Record<string, unknown>>;
+    offers: Array<Record<string, unknown>>;
+    trending: Array<Record<string, unknown>>;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadFeeds() {
+      try {
+        const feeds = await api<{
+          top_picks: Array<Record<string, unknown>>;
+          offers: Array<Record<string, unknown>>;
+          trending: Array<Record<string, unknown>>;
+        }>("/api/feeds/home", {
+          query: locationQuery(loc),
+        });
+        if (!cancelled) setProductFeeds(feeds);
+      } catch {
+        // Keep legacy offer home if product feeds unavailable.
+      }
+    }
+    loadFeeds();
+    return () => {
+      cancelled = true;
+    };
+  }, [loc.latitude, loc.longitude]);
+
   useEffect(() => {
     let cancelled = false;
     async function loadPicks() {
@@ -79,12 +107,44 @@ export default function HomePage() {
         className="mb-6 flex items-center gap-3 rounded-xl bg-white px-4 py-3.5 text-sm text-muted shadow-card outline outline-1 outline-black/5 transition hover:shadow-lift lg:hidden"
       >
         <SearchIcon className="shrink-0 text-ink/50" />
-        Search offers and stores
+        Search products and stores
       </Link>
 
+      {productFeeds ? (
+        <>
+          {(["top_picks", "offers", "trending"] as const).map((key) => {
+            const title =
+              key === "top_picks" ? "Top picks" : key === "offers" ? "Offers" : "Trending";
+            const items = productFeeds[key] || [];
+            if (!items.length) return null;
+            return (
+              <div key={key} className="mb-8">
+                <SectionHeader title={title} subtitle="From the product catalog" />
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {items.map((p) => (
+                    <div
+                      key={String(p.id)}
+                      className="rounded-2xl bg-white p-4 shadow-card outline outline-1 outline-black/5"
+                    >
+                      <p className="font-semibold">{String(p.name || "")}</p>
+                      <p className="text-sm text-muted">
+                        {p.has_discount
+                          ? `Rs ${String(p.effective_price)} · ${String(p.effective_discount_percent)}% off`
+                          : `Rs ${String(p.base_price || "")}`}
+                      </p>
+                      <p className="mt-1 text-xs text-muted">{String(p.business_name || "")}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </>
+      ) : null}
+
       <SectionHeader
-        title="Top picks"
-        subtitle="Biggest discounts near you"
+        title="Legacy offers"
+        subtitle="Still available during transition"
         action={
           <Link href="/picks" className="inline-flex items-center gap-1 text-sm font-bold text-deal hover:text-deal-deep">
             View all <ArrowRightIcon size={14} />
