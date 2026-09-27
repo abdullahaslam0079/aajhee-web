@@ -183,6 +183,8 @@ export type BusinessStats = {
   }>;
   product_count: number;
   active_product_count: number;
+  low_stock_count?: number;
+  low_stock_threshold?: number;
 };
 
 export type ProductGalleryImage = {
@@ -213,6 +215,7 @@ export type Product = {
   is_available?: boolean;
   is_enabled?: boolean;
   stock_quantity?: number | null;
+  is_low_stock?: boolean;
   sort_order?: number;
   view_count?: number;
   like_count?: number;

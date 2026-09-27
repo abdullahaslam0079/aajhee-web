@@ -74,6 +74,14 @@ export default function BusinessDashboardPage() {
     (o) => o.status === "pending" || o.status === "payment_submitted",
   );
   const maxStatus = Math.max(1, ...(stats?.by_status.map((row) => row.count) ?? [1]));
+  const lowStockProducts = useMemo(
+    () =>
+      products
+        .filter((p) => p.is_low_stock || (p.stock_quantity != null && p.stock_quantity <= 5))
+        .sort((a, b) => (a.stock_quantity ?? 0) - (b.stock_quantity ?? 0)),
+    [products],
+  );
+  const lowStockCount = stats?.low_stock_count ?? lowStockProducts.length;
 
   const checklist = useMemo(() => {
     const hasLogo = Boolean(profile?.logo_url || profile?.logo);
@@ -210,6 +218,46 @@ export default function BusinessDashboardPage() {
             </section>
           )}
 
+          {lowStockCount > 0 ? (
+            <section className="card mb-6 border border-amber-200 bg-amber-50/50 p-5">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 className="font-semibold">Low stock</h2>
+                  <p className="text-sm text-muted">
+                    {lowStockCount} listing{lowStockCount === 1 ? "" : "s"} at or below{" "}
+                    {stats?.low_stock_threshold ?? 5} units
+                  </p>
+                </div>
+                <Link
+                  href="/business/products?stock=low"
+                  className="text-sm font-semibold text-deal"
+                >
+                  View listings
+                </Link>
+              </div>
+              {lowStockProducts.length === 0 ? (
+                <p className="text-sm text-muted">Open listings to review inventory.</p>
+              ) : (
+                <div className="divide-y divide-line/80">
+                  {lowStockProducts.slice(0, 5).map((product) => (
+                    <Link
+                      key={product.id}
+                      href={`/business/products/${product.id}`}
+                      className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm hover:bg-white/50"
+                    >
+                      <p className="font-semibold">{product.name}</p>
+                      <Badge tone="warning">
+                        {product.stock_quantity === 0
+                          ? "Out of stock"
+                          : `${product.stock_quantity} left`}
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
+          ) : null}
+
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               label="Revenue (completed)"
@@ -233,10 +281,14 @@ export default function BusinessDashboardPage() {
               href="/business/products"
             />
             <StatCard
-              label="Branches"
-              value={branches.length}
-              hint={branches[0]?.name || "Add your first branch"}
-              href="/business/branches"
+              label="Low stock"
+              value={lowStockCount}
+              hint={
+                lowStockCount
+                  ? `At or below ${stats?.low_stock_threshold ?? 5} units`
+                  : "Inventory looks healthy"
+              }
+              href="/business/products?stock=low"
             />
           </div>
 

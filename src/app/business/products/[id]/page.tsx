@@ -33,6 +33,7 @@ export default function EditProductPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [discountPercent, setDiscountPercent] = useState("");
   const [salePrice, setSalePrice] = useState("");
+  const [galleryBusy, setGalleryBusy] = useState(false);
   const [form, setForm] = useState({
     name: "",
     base_price: "",
@@ -157,6 +158,46 @@ export default function EditProductPage() {
     }
   }
 
+  async function deleteGalleryImage(imageId: number) {
+    setGalleryBusy(true);
+    setError("");
+    try {
+      const updated = await api<Product>(`/api/business/products/${id}/gallery/${imageId}`, {
+        method: "DELETE",
+        auth: true,
+      });
+      setProduct(updated);
+    } catch (err) {
+      setError(errorMessage(err, "Could not delete photo."));
+    } finally {
+      setGalleryBusy(false);
+    }
+  }
+
+  async function moveGallery(index: number, direction: -1 | 1) {
+    if (!product?.gallery?.length) return;
+    const next = index + direction;
+    if (next < 0 || next >= product.gallery.length) return;
+    const ids = product.gallery.map((g) => g.id);
+    const tmp = ids[index];
+    ids[index] = ids[next];
+    ids[next] = tmp;
+    setGalleryBusy(true);
+    setError("");
+    try {
+      const updated = await api<Product>(`/api/business/products/${id}/gallery/reorder`, {
+        method: "POST",
+        auth: true,
+        body: JSON.stringify({ image_ids: ids }),
+      });
+      setProduct(updated);
+    } catch (err) {
+      setError(errorMessage(err, "Could not reorder photos."));
+    } finally {
+      setGalleryBusy(false);
+    }
+  }
+
   async function remove() {
     try {
       await api(`/api/business/products/${id}`, { method: "DELETE", auth: true });
@@ -203,6 +244,12 @@ export default function EditProductPage() {
         {product.has_discount ? (
           <Badge tone="deal">
             Sale {rs(product.effective_price)} (was {rs(product.base_price)})
+          </Badge>
+        ) : null}
+        {product.is_low_stock ||
+        (product.stock_quantity != null && product.stock_quantity <= 5) ? (
+          <Badge tone="warning">
+            {product.stock_quantity === 0 ? "Out of stock" : `Low stock · ${product.stock_quantity}`}
           </Badge>
         ) : null}
         {product.view_count != null ? <Badge>{product.view_count} views</Badge> : null}
@@ -273,7 +320,7 @@ export default function EditProductPage() {
             onChange={(e) => setForm({ ...form, detailed_description: e.target.value })}
           />
         </Field>
-        <Field label="Replace / add photos">
+        <Field label="Replace main photo / add gallery photos">
           <input
             className={inputClass}
             type="file"
@@ -282,8 +329,68 @@ export default function EditProductPage() {
             multiple
             onChange={(e) => void onFiles(e.target.files)}
           />
+          <p className="mt-1 text-xs text-muted">
+            First selected photo becomes the main image. Extra photos are added to the gallery
+            (existing gallery photos are kept).
+          </p>
         </Field>
         {files.length ? <p className="text-sm text-muted">{files.length} new photo(s) ready</p> : null}
+
+        {product.gallery && product.gallery.length > 0 ? (
+          <div>
+            <p className="mb-2 text-sm font-semibold text-ink/80">Gallery</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {product.gallery.map((img, index) => (
+                <div
+                  key={img.id}
+                  className="flex gap-3 rounded-xl border border-line bg-paper/40 p-2"
+                >
+                  {img.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={img.image_url}
+                      alt=""
+                      className="h-20 w-20 shrink-0 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="grid h-20 w-20 place-items-center rounded-lg bg-paper text-xs text-muted">
+                      No image
+                    </div>
+                  )}
+                  <div className="flex min-w-0 flex-1 flex-col justify-between">
+                    <p className="text-xs text-muted">Photo {index + 1}</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="text-xs font-semibold text-deal disabled:opacity-40"
+                        disabled={galleryBusy || index === 0}
+                        onClick={() => void moveGallery(index, -1)}
+                      >
+                        Move up
+                      </button>
+                      <button
+                        type="button"
+                        className="text-xs font-semibold text-deal disabled:opacity-40"
+                        disabled={galleryBusy || index === product.gallery!.length - 1}
+                        onClick={() => void moveGallery(index, 1)}
+                      >
+                        Move down
+                      </button>
+                      <button
+                        type="button"
+                        className="text-xs font-semibold text-red-600 disabled:opacity-40"
+                        disabled={galleryBusy}
+                        onClick={() => void deleteGalleryImage(img.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
         {branches.length ? (
           <div>
             <p className="mb-2 text-sm font-semibold text-ink/80">Available at branches</p>
