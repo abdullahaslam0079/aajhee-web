@@ -244,6 +244,10 @@ export type BranchFulfillmentSettings = {
   customer_cancel_window_minutes: number;
   bank_transfer_enabled: boolean;
   bank_transfer_instructions: string;
+  stripe_enabled: boolean;
+  stripe_instructions: string;
+  jazzcash_enabled: boolean;
+  jazzcash_instructions: string;
   cash_on_pickup_enabled: boolean;
   cash_on_delivery_enabled: boolean;
   updated_at?: string;
@@ -309,6 +313,7 @@ export type BusinessOrder = {
   delivery_snapshot?: OrderDeliverySnapshot | null;
   payment_proofs: OrderPaymentProof[];
   bank_transfer_instructions?: string;
+  payment_instructions?: string;
 };
 
 export type BusinessNotification = {

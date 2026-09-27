@@ -20,6 +20,7 @@ import {
   labelPayment,
   labelStatus,
   nextActions,
+  requiresPaymentProof,
   STATUS_ACTION_LABELS,
   statusTone,
 } from "@/lib/commerce";
@@ -263,12 +264,12 @@ export default function BusinessOrderDetailPage() {
             ) : null}
           </section>
 
-          {(order.payment_method === "bank_transfer" || order.payment_proofs?.length > 0) && (
+          {(requiresPaymentProof(order.payment_method) || order.payment_proofs?.length > 0) && (
             <section className="card space-y-3 p-5">
               <h2 className="font-semibold">Payment proofs</h2>
-              {order.bank_transfer_instructions ? (
+              {(order.payment_instructions || order.bank_transfer_instructions) ? (
                 <p className="rounded-xl bg-paper p-3 text-sm whitespace-pre-wrap">
-                  {order.bank_transfer_instructions}
+                  {order.payment_instructions || order.bank_transfer_instructions}
                 </p>
               ) : null}
               {!order.payment_proofs?.length ? (

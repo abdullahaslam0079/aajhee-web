@@ -29,7 +29,7 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
 export const STATUS_ACTION_LABELS: Partial<Record<OrderStatus, string>> = {
   accepted: "Accept order",
   cancelled: "Cancel",
-  awaiting_payment: "Request bank transfer",
+  awaiting_payment: "Request payment",
   preparing: "Start preparing",
   ready_for_pickup: "Ready for pickup",
   out_for_delivery: "Out for delivery",
@@ -51,6 +51,17 @@ export const PAYMENT_LABELS: Record<string, string> = {
   stripe: "Card",
   jazzcash: "JazzCash",
 };
+
+/** Methods where the customer uploads a transaction screenshot after accept. */
+export const PAYMENT_PROOF_METHODS = new Set<string>([
+  "bank_transfer",
+  "stripe",
+  "jazzcash",
+]);
+
+export function requiresPaymentProof(method?: string | null): boolean {
+  return Boolean(method && PAYMENT_PROOF_METHODS.has(method));
+}
 
 export function statusTone(
   status: string,
@@ -115,7 +126,7 @@ export function nextActions(order: {
   }
 
   if (order.status === "accepted") {
-    if (order.payment_method === "bank_transfer") {
+    if (requiresPaymentProof(order.payment_method)) {
       actions = actions.filter((s) => s !== "preparing");
     } else {
       actions = actions.filter((s) => s !== "awaiting_payment");

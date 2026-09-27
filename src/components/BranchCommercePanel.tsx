@@ -31,6 +31,10 @@ const defaultFulfillment = (): BranchFulfillmentSettings => ({
   customer_cancel_window_minutes: 30,
   bank_transfer_enabled: false,
   bank_transfer_instructions: "",
+  stripe_enabled: false,
+  stripe_instructions: "",
+  jazzcash_enabled: false,
+  jazzcash_instructions: "",
   cash_on_pickup_enabled: true,
   cash_on_delivery_enabled: true,
 });
@@ -277,6 +281,36 @@ export function BranchCommercePanel({ branchId }: { branchId: number }) {
               value={fulfillment.bank_transfer_instructions}
               onChange={(e) =>
                 setFulfillment({ ...fulfillment, bank_transfer_instructions: e.target.value })
+              }
+            />
+          </Field>
+          <Toggle
+            checked={fulfillment.stripe_enabled}
+            onChange={(v) => setFulfillment({ ...fulfillment, stripe_enabled: v })}
+            label="Card (Stripe) — customer uploads payment screenshot"
+          />
+          <Field label="Card payment instructions" hint="Payment link, account details, or how to pay">
+            <textarea
+              className={inputClass}
+              rows={3}
+              value={fulfillment.stripe_instructions}
+              onChange={(e) =>
+                setFulfillment({ ...fulfillment, stripe_instructions: e.target.value })
+              }
+            />
+          </Field>
+          <Toggle
+            checked={fulfillment.jazzcash_enabled}
+            onChange={(v) => setFulfillment({ ...fulfillment, jazzcash_enabled: v })}
+            label="JazzCash — customer uploads payment screenshot"
+          />
+          <Field label="JazzCash instructions" hint="JazzCash number / account name">
+            <textarea
+              className={inputClass}
+              rows={3}
+              value={fulfillment.jazzcash_instructions}
+              onChange={(e) =>
+                setFulfillment({ ...fulfillment, jazzcash_instructions: e.target.value })
               }
             />
           </Field>
