@@ -10,6 +10,17 @@ export function money(value?: number | string | null) {
   }).format(n);
 }
 
+/** Merchant-facing PKR amounts (Aajhee Business). */
+export function rs(value?: number | string | null) {
+  if (value === undefined || value === null || value === "") return "Rs —";
+  const n = typeof value === "string" ? Number(value) : value;
+  if (Number.isNaN(n)) return `Rs ${value}`;
+  return `Rs ${new Intl.NumberFormat("en-PK", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(n)}`;
+}
+
 export function percent(value?: number | string | null) {
   const n = typeof value === "string" ? Number(value) : value;
   if (!n) return null;

@@ -120,7 +120,12 @@ export type BusinessProfile = {
   name: string;
   email?: string;
   logo?: string | null;
+  logo_url?: string | null;
   category?: Category | number;
+  category_id?: number;
+  category_name?: string;
+  presence_mode?: string;
+  online_coverage?: string;
 };
 
 export type Branch = {
@@ -133,6 +138,171 @@ export type Branch = {
   latitude: number | string;
   longitude: number | string;
   formatted_address?: string;
+  formattedAddress?: string;
+};
+
+export type OrderStatus =
+  | "pending"
+  | "accepted"
+  | "cancelled"
+  | "awaiting_payment"
+  | "payment_submitted"
+  | "paid_confirmed"
+  | "preparing"
+  | "ready_for_pickup"
+  | "out_for_delivery"
+  | "completed";
+
+export type FulfillmentType = "pickup" | "local_same_day" | "nationwide";
+export type PaymentMethod =
+  | "cash_on_pickup"
+  | "cash_on_delivery"
+  | "bank_transfer"
+  | "stripe"
+  | "jazzcash";
+export type ContactType = "whatsapp" | "phone" | "email";
+export type CustomerCancelPolicy = "disabled" | "window_minutes";
+export type PaymentProofReviewStatus = "pending" | "accepted" | "rejected";
+
+export type BusinessStats = {
+  total_orders: number;
+  completed_orders: number;
+  gmv: string;
+  by_status: Array<{ status: OrderStatus; count: number }>;
+  by_branch: Array<{
+    branch_id: number;
+    branch_name: string;
+    gmv: string;
+    order_count: number;
+  }>;
+  by_product: Array<{
+    product_id: number | null;
+    product_name: string | null;
+    quantity: number;
+    gmv: string;
+  }>;
+  product_count: number;
+  active_product_count: number;
+};
+
+export type ProductGalleryImage = {
+  id: number;
+  image_url: string | null;
+  source_url?: string;
+  sort_order: number;
+};
+
+export type Product = {
+  id: number;
+  business_id?: number;
+  business_name?: string;
+  category_id: number;
+  category_name?: string;
+  branch_ids?: number[];
+  name: string;
+  description?: string;
+  detailed_description?: string;
+  image_url?: string | null;
+  gallery?: ProductGalleryImage[];
+  base_price: string;
+  discount_percent?: string | null;
+  sale_price?: string | null;
+  has_discount?: boolean;
+  effective_price?: string;
+  effective_discount_percent?: string;
+  is_available?: boolean;
+  is_enabled?: boolean;
+  stock_quantity?: number | null;
+  sort_order?: number;
+  view_count?: number;
+  like_count?: number;
+  order_count?: number;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type BranchContact = {
+  id?: number;
+  contact_type: ContactType;
+  value: string;
+  is_primary?: boolean;
+};
+
+export type BranchFulfillmentSettings = {
+  pickup_enabled: boolean;
+  pickup_radius_km: string;
+  local_same_day_enabled: boolean;
+  local_delivery_fee: string;
+  local_max_delivery_hours: number;
+  nationwide_enabled: boolean;
+  nationwide_delivery_fee: string;
+  nationwide_max_delivery_hours: number;
+  customer_cancel_policy: CustomerCancelPolicy;
+  customer_cancel_window_minutes: number;
+  bank_transfer_enabled: boolean;
+  bank_transfer_instructions: string;
+  cash_on_pickup_enabled: boolean;
+  cash_on_delivery_enabled: boolean;
+  updated_at?: string;
+};
+
+export type OrderItem = {
+  id: number;
+  product_id: number | null;
+  product_name: string;
+  unit_base_price: string;
+  unit_sale_price: string | null;
+  unit_discount_percent: string;
+  quantity: number;
+  line_total: string;
+};
+
+export type OrderPaymentProof = {
+  id: number;
+  file_url: string | null;
+  note: string;
+  submitted_at: string;
+  review_status: PaymentProofReviewStatus;
+  reviewed_at: string | null;
+  review_note: string;
+};
+
+export type OrderDeliverySnapshot = {
+  fulfillment_type: FulfillmentType;
+  delivery_fee: string;
+  max_delivery_hours: number;
+  promised_by: string | null;
+  branch_city_name?: string;
+  customer_city_name?: string;
+};
+
+export type BusinessOrder = {
+  id: number;
+  public_id: string;
+  business_id: number;
+  business_name: string;
+  branch_id: number;
+  branch_name: string;
+  status: OrderStatus;
+  fulfillment_type: FulfillmentType;
+  payment_method: PaymentMethod;
+  subtotal: string;
+  delivery_fee: string;
+  total: string;
+  delivery_address_text: string;
+  customer_notes: string;
+  customer_cancel_allowed?: boolean;
+  customer_cancel_until?: string | null;
+  can_customer_cancel?: boolean;
+  cancelled_by?: string;
+  cancel_reason?: string;
+  cancelled_at?: string | null;
+  placed_at: string;
+  updated_at: string;
+  items: OrderItem[];
+  delivery_snapshot?: OrderDeliverySnapshot | null;
+  payment_proofs: OrderPaymentProof[];
+  bank_transfer_instructions?: string;
 };
 
 export type BranchStat = {

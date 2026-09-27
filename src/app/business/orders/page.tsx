@@ -1,92 +1,184 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Empty, ErrorBox, PageHeader } from "@/components/ui";
-import { api } from "@/lib/api";
+import { Badge, Empty, ErrorBox, PageHeader, inputClass } from "@/components/ui";
+import { api, pageResults } from "@/lib/api";
+import {
+  formatDateTime,
+  labelFulfillment,
+  labelPayment,
+  labelStatus,
+  nextActions,
+  STATUS_ACTION_LABELS,
+  statusTone,
+} from "@/lib/commerce";
 import { errorMessage } from "@/lib/errors";
+import { rs } from "@/lib/format";
+import type { Branch, BusinessOrder, OrderStatus } from "@/lib/types";
 
-type Order = {
-  public_id: string;
-  status: string;
-  fulfillment_type: string;
-  payment_method: string;
-  total: string;
-  branch_name?: string;
-};
+const STATUS_FILTERS: Array<{ value: string; label: string }> = [
+  { value: "", label: "All" },
+  { value: "pending", label: "Pending" },
+  { value: "awaiting_payment", label: "Awaiting payment" },
+  { value: "payment_submitted", label: "Payment submitted" },
+  { value: "preparing", label: "Preparing" },
+  { value: "ready_for_pickup", label: "Ready" },
+  { value: "out_for_delivery", label: "Out for delivery" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
+];
 
 export default function BusinessOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<BusinessOrder[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [status, setStatus] = useState("");
+  const [branchId, setBranchId] = useState("");
   const [error, setError] = useState("");
+  const [busyId, setBusyId] = useState("");
 
   function load() {
-    api<Order[]>("/api/business/orders", { auth: true })
-      .then((data) => setOrders(Array.isArray(data) ? data : []))
+    api<BusinessOrder[] | { results: BusinessOrder[] }>("/api/business/orders", {
+      auth: true,
+      query: {
+        status: status || undefined,
+        branch_id: branchId || undefined,
+      },
+    })
+      .then((data) => setOrders(pageResults(data)))
       .catch((err) => setError(errorMessage(err)));
   }
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, branchId]);
+
+  useEffect(() => {
+    api<Branch[]>("/api/business/branches", { auth: true })
+      .then((data) => setBranches(Array.isArray(data) ? data : []))
+      .catch(() => undefined);
   }, []);
 
-  async function setStatus(publicId: string, status: string) {
+  const counts = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const order of orders) {
+      map[order.status] = (map[order.status] || 0) + 1;
+    }
+    return map;
+  }, [orders]);
+
+  async function setOrderStatus(publicId: string, next: OrderStatus) {
+    setBusyId(publicId);
+    setError("");
     try {
       await api(`/api/business/orders/${publicId}/status`, {
         method: "POST",
         auth: true,
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status: next }),
       });
       load();
     } catch (err) {
       setError(errorMessage(err));
+    } finally {
+      setBusyId("");
     }
   }
 
   return (
     <div>
-      <PageHeader title="Orders" subtitle="Accept, fulfill, and confirm payments" />
+      <PageHeader
+        title="Orders"
+        subtitle="Review details, accept, fulfill, and confirm payments"
+      />
       {error ? <ErrorBox message={error} /> : null}
+
+      <div className="mb-4 flex flex-wrap gap-3">
+        <select className={`${inputClass} w-auto min-w-[160px]`} value={status} onChange={(e) => setStatus(e.target.value)}>
+          {STATUS_FILTERS.map((filter) => (
+            <option key={filter.value || "all"} value={filter.value}>
+              {filter.label}
+              {!filter.value && orders.length ? ` (${orders.length})` : ""}
+              {filter.value && counts[filter.value] ? ` (${counts[filter.value]})` : ""}
+            </option>
+          ))}
+        </select>
+        <select
+          className={`${inputClass} w-auto min-w-[180px]`}
+          value={branchId}
+          onChange={(e) => setBranchId(e.target.value)}
+        >
+          <option value="">All branches</option>
+          {branches.map((branch) => (
+            <option key={branch.id} value={branch.id}>
+              {branch.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {orders.length === 0 ? (
-        <Empty title="No orders yet" />
+        <Empty title="No orders" body="Orders matching this filter will appear here." />
       ) : (
         <div className="space-y-3">
-          {orders.map((o) => (
-            <div key={o.public_id} className="rounded-2xl bg-white p-5 shadow-card">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="font-semibold">
-                    {o.branch_name} · Rs {o.total}
-                  </p>
-                  <p className="text-sm text-muted">
-                    {o.status} · {o.fulfillment_type} · {o.payment_method}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {o.status === "pending" ? (
-                    <button
-                      className="rounded-lg bg-deal px-3 py-1.5 text-sm font-semibold text-white"
-                      onClick={() => setStatus(o.public_id, "accepted")}
+          {orders.map((order) => {
+            const actions = nextActions(order.status).filter((s) => s !== "payment_submitted");
+            return (
+              <article key={order.public_id} className="card p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Link
+                        href={`/business/orders/${order.public_id}`}
+                        className="font-semibold hover:text-deal"
+                      >
+                        {order.branch_name} · {rs(order.total)}
+                      </Link>
+                      <Badge tone={statusTone(order.status)}>{labelStatus(order.status)}</Badge>
+                    </div>
+                    <p className="mt-1 text-sm text-muted">
+                      #{order.public_id.slice(0, 8)} · {formatDateTime(order.placed_at)} ·{" "}
+                      {labelFulfillment(order.fulfillment_type)} · {labelPayment(order.payment_method)}
+                    </p>
+                    {order.items?.length ? (
+                      <p className="mt-1 text-sm text-muted">
+                        {order.items
+                          .slice(0, 3)
+                          .map((item) => `${item.quantity}× ${item.product_name}`)
+                          .join(" · ")}
+                        {order.items.length > 3 ? ` · +${order.items.length - 3} more` : ""}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      href={`/business/orders/${order.public_id}`}
+                      className="rounded-lg border border-line px-3 py-1.5 text-sm font-semibold hover:bg-paper"
                     >
-                      Accept
-                    </button>
-                  ) : null}
-                  <button
-                    className="rounded-lg border border-line px-3 py-1.5 text-sm"
-                    onClick={() => setStatus(o.public_id, "cancelled")}
-                  >
-                    Cancel
-                  </button>
+                      View details
+                    </Link>
+                    {actions.map((next) => (
+                      <button
+                        key={next}
+                        type="button"
+                        disabled={busyId === order.public_id}
+                        className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
+                          next === "cancelled"
+                            ? "border border-line hover:bg-paper"
+                            : "bg-deal text-white"
+                        }`}
+                        onClick={() => void setOrderStatus(order.public_id, next)}
+                      >
+                        {STATUS_ACTION_LABELS[next] || labelStatus(next)}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
-      <p className="mt-4 text-sm text-muted">
-        <Link href="/business" className="text-deal font-semibold">
-          Back to dashboard
-        </Link>
-      </p>
     </div>
   );
 }

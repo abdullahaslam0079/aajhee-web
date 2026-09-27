@@ -11,14 +11,17 @@ export const inputClass = `w-full ${controlClass}`;
 export function Field({
   label,
   children,
+  hint,
 }: {
   label: string;
   children: React.ReactNode;
+  hint?: string;
 }) {
   return (
     <label className="block">
       <span className="mb-1.5 block text-sm font-semibold text-ink/80">{label}</span>
       {children}
+      {hint ? <span className="mt-1 block text-xs text-muted">{hint}</span> : null}
     </label>
   );
 }
@@ -42,6 +45,139 @@ export function Button({
       {...props}
     >
       {children}
+    </button>
+  );
+}
+
+export function Badge({
+  children,
+  tone = "neutral",
+}: {
+  children: React.ReactNode;
+  tone?: "neutral" | "success" | "warning" | "danger" | "deal";
+}) {
+  const styles = {
+    neutral: "bg-paper text-muted ring-line",
+    success: "bg-emerald-50 text-emerald-800 ring-emerald-100",
+    warning: "bg-amber-50 text-amber-800 ring-amber-100",
+    danger: "bg-red-50 text-red-700 ring-red-100",
+    deal: "bg-deal-soft text-deal-ink ring-deal/10",
+  }[tone];
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ${styles}`}>
+      {children}
+    </span>
+  );
+}
+
+export function StatCard({
+  label,
+  value,
+  hint,
+  href,
+}: {
+  label: string;
+  value: string | number;
+  hint?: string;
+  href?: string;
+}) {
+  const inner = (
+    <>
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</p>
+      <p className="mt-2 font-display text-2xl font-semibold tracking-tight">{value}</p>
+      {hint ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
+    </>
+  );
+  if (href) {
+    return (
+      <Link href={href} className="card block p-4 transition hover:-translate-y-0.5 hover:shadow-lift">
+        {inner}
+      </Link>
+    );
+  }
+  return <div className="card p-4">{inner}</div>;
+}
+
+export function Modal({
+  title,
+  children,
+  onClose,
+}: {
+  title: string;
+  children: React.ReactNode;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-40 grid place-items-center bg-black/40 p-4" onClick={onClose}>
+      <div className="card w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold">{title}</h2>
+          <button type="button" className="text-muted hover:text-ink" onClick={onClose} aria-label="Close">
+            ×
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function ConfirmDialog({
+  title,
+  message,
+  confirmLabel,
+  cancelLabel,
+  danger,
+  onConfirm,
+  onCancel,
+}: {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  cancelLabel: string;
+  danger?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <Modal title={title} onClose={onCancel}>
+      <p className="text-sm text-muted">{message}</p>
+      <div className="mt-5 flex justify-end gap-2">
+        <Button type="button" variant="ghost" onClick={onCancel}>
+          {cancelLabel}
+        </Button>
+        <Button type="button" variant={danger ? "danger" : "primary"} onClick={onConfirm}>
+          {confirmLabel}
+        </Button>
+      </div>
+    </Modal>
+  );
+}
+
+export function Toggle({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (value: boolean) => void;
+  label?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="inline-flex items-center gap-2 text-sm font-semibold"
+    >
+      <span className={`relative h-6 w-10 rounded-full transition ${checked ? "bg-deal-deep" : "bg-line"}`}>
+        <span
+          className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition"
+          style={{ left: checked ? "1.15rem" : "0.15rem" }}
+        />
+      </span>
+      {label}
     </button>
   );
 }
@@ -75,25 +211,30 @@ export function PageHeader({
   title,
   subtitle,
   action,
+  actions,
 }: {
   title: string;
   subtitle?: string;
   action?: { href: string; label: string };
+  actions?: React.ReactNode;
 }) {
   return (
-    <div className="mb-5 flex items-center justify-between gap-3">
+    <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
       <div>
         <h1 className="font-display text-2xl font-semibold tracking-tight">{title}</h1>
         {subtitle ? <p className="mt-1 text-sm text-muted">{subtitle}</p> : null}
       </div>
-      {action ? (
-        <Link
-          href={action.href}
-          className="rounded-xl bg-deal-deep px-3.5 py-1.5 text-sm font-bold !text-white shadow-sm"
-        >
-          {action.label}
-        </Link>
-      ) : null}
+      <div className="flex flex-wrap items-center gap-2">
+        {actions}
+        {action ? (
+          <Link
+            href={action.href}
+            className="rounded-xl bg-deal-deep px-3.5 py-1.5 text-sm font-bold !text-white shadow-sm"
+          >
+            {action.label}
+          </Link>
+        ) : null}
+      </div>
     </div>
   );
 }
