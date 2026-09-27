@@ -280,7 +280,10 @@ export function BranchCommercePanel({ branchId }: { branchId: number }) {
               }
             />
           </Field>
-          <Field label="Customer cancel policy">
+          <Field
+            label="Customer cancel policy"
+            hint="Customers can only cancel while the order is still pending. After you accept, cancel is merchant-only."
+          >
             <select
               className={inputClass}
               value={fulfillment.customer_cancel_policy}
@@ -291,7 +294,7 @@ export function BranchCommercePanel({ branchId }: { branchId: number }) {
                 })
               }
             >
-              <option value="window_minutes">Allow within a time window</option>
+              <option value="window_minutes">Allow while pending (time window)</option>
               <option value="disabled">Do not allow customer cancel</option>
             </select>
           </Field>

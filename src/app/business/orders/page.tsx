@@ -122,7 +122,7 @@ export default function BusinessOrdersPage() {
       ) : (
         <div className="space-y-3">
           {orders.map((order) => {
-            const actions = nextActions(order.status).filter((s) => s !== "payment_submitted");
+            const actions = nextActions(order);
             return (
               <article key={order.public_id} className="card p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">

@@ -106,7 +106,7 @@ export default function BusinessOrderDetailPage() {
     );
   }
 
-  const actions = nextActions(order.status).filter((s) => s !== "payment_submitted");
+  const actions = nextActions(order);
 
   return (
     <div>

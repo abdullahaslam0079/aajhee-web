@@ -1,4 +1,4 @@
-import type { OrderStatus } from "./types";
+import type { BusinessOrder, FulfillmentType, OrderStatus, PaymentMethod } from "./types";
 
 export const BUSINESS_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending: ["accepted", "cancelled"],
@@ -87,8 +87,46 @@ export function labelPayment(value: string) {
   return PAYMENT_LABELS[value] || value.replaceAll("_", " ");
 }
 
-export function nextActions(status: OrderStatus): OrderStatus[] {
-  return BUSINESS_STATUS_TRANSITIONS[status] || [];
+export function isPickupFulfillment(fulfillment?: FulfillmentType | string) {
+  return fulfillment === "pickup";
+}
+
+export function isDeliveryFulfillment(fulfillment?: FulfillmentType | string) {
+  return fulfillment === "local_same_day" || fulfillment === "nationwide";
+}
+
+/** Merchant actions allowed for this order (mirrors backend rules). */
+export function nextActions(order: {
+  status: OrderStatus;
+  fulfillment_type?: FulfillmentType | string;
+  payment_method?: PaymentMethod | string;
+}): OrderStatus[] {
+  let actions = [...(BUSINESS_STATUS_TRANSITIONS[order.status] || [])];
+
+  // Customer uploads proof — merchants don't mark payment_submitted
+  actions = actions.filter((s) => s !== "payment_submitted");
+
+  if (order.status === "preparing") {
+    if (isPickupFulfillment(order.fulfillment_type)) {
+      actions = actions.filter((s) => s !== "out_for_delivery");
+    } else if (isDeliveryFulfillment(order.fulfillment_type)) {
+      actions = actions.filter((s) => s !== "ready_for_pickup");
+    }
+  }
+
+  if (order.status === "accepted") {
+    if (order.payment_method === "bank_transfer") {
+      actions = actions.filter((s) => s !== "preparing");
+    } else {
+      actions = actions.filter((s) => s !== "awaiting_payment");
+    }
+  }
+
+  return actions;
+}
+
+export function nextActionsForOrder(order: Pick<BusinessOrder, "status" | "fulfillment_type" | "payment_method">) {
+  return nextActions(order);
 }
 
 export function formatDateTime(value?: string | null) {
