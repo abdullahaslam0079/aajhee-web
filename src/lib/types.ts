@@ -291,6 +291,9 @@ export type BusinessOrder = {
   total: string;
   delivery_address_text: string;
   customer_notes: string;
+  customer_name?: string;
+  customer_phone?: string | null;
+  customer_email?: string | null;
   customer_cancel_allowed?: boolean;
   customer_cancel_until?: string | null;
   can_customer_cancel?: boolean;
@@ -303,6 +306,17 @@ export type BusinessOrder = {
   delivery_snapshot?: OrderDeliverySnapshot | null;
   payment_proofs: OrderPaymentProof[];
   bank_transfer_instructions?: string;
+};
+
+export type BusinessNotification = {
+  id: number;
+  type: string;
+  title: string;
+  body: string;
+  data?: Record<string, unknown>;
+  is_read?: boolean;
+  read_at?: string | null;
+  created_at: string;
 };
 
 export type BranchStat = {

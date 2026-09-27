@@ -1,11 +1,26 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
+import { AddressSearch } from "@/components/AddressSearch";
 import { Button, ErrorBox, Field, PageHeader, inputClass } from "@/components/ui";
 import { api } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
+import type { AddressSuggestion } from "@/lib/geocode";
+
+const LocationMapPicker = dynamic(
+  () => import("@/components/LocationMapPicker").then((m) => m.LocationMapPicker),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-64 items-center justify-center rounded-xl border border-line text-sm text-muted">
+        Loading map…
+      </div>
+    ),
+  },
+);
 
 export default function NewBranchPage() {
   const router = useRouter();
@@ -20,6 +35,18 @@ export default function NewBranchPage() {
     latitude: "31.520400",
     longitude: "74.358700",
   });
+
+  function applyLocation(hit: AddressSuggestion) {
+    setForm((current) => ({
+      ...current,
+      street: hit.street || current.street,
+      house_number: hit.houseNumber || current.house_number,
+      postal_code: hit.postalCode || current.postal_code,
+      city: hit.city || current.city,
+      latitude: hit.latitude,
+      longitude: hit.longitude,
+    }));
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,7 +74,7 @@ export default function NewBranchPage() {
     <div>
       <PageHeader
         title="Add branch"
-        subtitle="Set the address and coordinates so customers can find you"
+        subtitle="Search an address or drop a pin so customers can find you on the map"
         actions={
           <Link href="/business/branches" className="text-sm font-semibold text-muted hover:text-ink">
             ← All branches
@@ -62,6 +89,16 @@ export default function NewBranchPage() {
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             required
+          />
+        </Field>
+        <Field label="Search address">
+          <AddressSearch onPick={applyLocation} />
+        </Field>
+        <Field label="Map location">
+          <LocationMapPicker
+            latitude={form.latitude}
+            longitude={form.longitude}
+            onPick={applyLocation}
           />
         </Field>
         <Field label="Street">
@@ -99,21 +136,11 @@ export default function NewBranchPage() {
           </Field>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Latitude" hint="Default is Lahore — update for your store">
-            <input
-              className={inputClass}
-              value={form.latitude}
-              onChange={(e) => setForm({ ...form, latitude: e.target.value })}
-              required
-            />
+          <Field label="Latitude">
+            <input className={inputClass} value={form.latitude} readOnly />
           </Field>
           <Field label="Longitude">
-            <input
-              className={inputClass}
-              value={form.longitude}
-              onChange={(e) => setForm({ ...form, longitude: e.target.value })}
-              required
-            />
+            <input className={inputClass} value={form.longitude} readOnly />
           </Field>
         </div>
         <Button type="submit" disabled={saving}>

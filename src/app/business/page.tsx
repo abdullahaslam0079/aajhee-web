@@ -46,6 +46,11 @@ export default function BusinessDashboardPage() {
 
   const pending =
     stats?.by_status.find((row) => row.status === "pending")?.count ?? 0;
+  const paymentSubmitted =
+    stats?.by_status.find((row) => row.status === "payment_submitted")?.count ?? 0;
+  const needsAction = recentOrders.filter(
+    (o) => o.status === "pending" || o.status === "payment_submitted",
+  );
   const maxStatus = Math.max(1, ...(stats?.by_status.map((row) => row.count) ?? [1]));
 
   return (
@@ -63,6 +68,53 @@ export default function BusinessDashboardPage() {
         </div>
       ) : (
         <>
+          {(pending > 0 || paymentSubmitted > 0 || needsAction.length > 0) && (
+            <section className="card mb-6 border border-deal/20 bg-deal-soft/40 p-5">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 className="font-semibold">Needs action</h2>
+                  <p className="text-sm text-muted">
+                    {[
+                      pending ? `${pending} to accept` : null,
+                      paymentSubmitted ? `${paymentSubmitted} payment proofs` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "Orders waiting on you"}
+                  </p>
+                </div>
+                <Link href="/business/orders?status=pending" className="text-sm font-semibold text-deal">
+                  Open queue
+                </Link>
+              </div>
+              {needsAction.length === 0 ? (
+                <p className="text-sm text-muted">
+                  Check the orders list — some may be outside the recent feed.
+                </p>
+              ) : (
+                <div className="divide-y divide-line/80">
+                  {needsAction.slice(0, 5).map((order) => (
+                    <Link
+                      key={order.public_id}
+                      href={`/business/orders/${order.public_id}`}
+                      className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm hover:bg-white/50"
+                    >
+                      <div>
+                        <p className="font-semibold">
+                          {order.branch_name} · {rs(order.total)}
+                        </p>
+                        <p className="text-muted">
+                          {order.customer_name || order.customer_phone || "Customer"} ·{" "}
+                          {labelFulfillment(order.fulfillment_type)}
+                        </p>
+                      </div>
+                      <Badge tone={statusTone(order.status)}>{labelStatus(order.status)}</Badge>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               label="Revenue (completed)"
@@ -70,10 +122,14 @@ export default function BusinessDashboardPage() {
               hint={`${stats?.completed_orders ?? 0} completed orders`}
             />
             <StatCard
-              label="Total orders"
-              value={stats?.total_orders ?? 0}
-              hint={pending ? `${pending} waiting for accept` : "No pending orders"}
-              href="/business/orders"
+              label="Needs action"
+              value={pending + paymentSubmitted}
+              hint={
+                pending || paymentSubmitted
+                  ? `${pending} pending · ${paymentSubmitted} proofs`
+                  : "All clear"
+              }
+              href="/business/orders?status=pending"
             />
             <StatCard
               label="Active listings"

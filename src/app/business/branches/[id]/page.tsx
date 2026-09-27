@@ -1,8 +1,10 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { AddressSearch } from "@/components/AddressSearch";
 import { BranchCommercePanel } from "@/components/BranchCommercePanel";
 import {
   Button,
@@ -15,7 +17,20 @@ import {
 } from "@/components/ui";
 import { api } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
+import type { AddressSuggestion } from "@/lib/geocode";
 import type { Branch } from "@/lib/types";
+
+const LocationMapPicker = dynamic(
+  () => import("@/components/LocationMapPicker").then((m) => m.LocationMapPicker),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-64 items-center justify-center rounded-xl border border-line text-sm text-muted">
+        Loading map…
+      </div>
+    ),
+  },
+);
 
 export default function EditBranchPage() {
   const params = useParams<{ id: string }>();
@@ -31,8 +46,8 @@ export default function EditBranchPage() {
     house_number: "",
     postal_code: "",
     city: "",
-    latitude: "",
-    longitude: "",
+    latitude: "31.520400",
+    longitude: "74.358700",
   });
 
   useEffect(() => {
@@ -44,8 +59,8 @@ export default function EditBranchPage() {
           house_number: branch.house_number || "",
           postal_code: branch.postal_code || "",
           city: branch.city || "",
-          latitude: String(branch.latitude ?? ""),
-          longitude: String(branch.longitude ?? ""),
+          latitude: String(branch.latitude ?? "31.520400"),
+          longitude: String(branch.longitude ?? "74.358700"),
         });
         setLoaded(true);
       })
@@ -54,6 +69,18 @@ export default function EditBranchPage() {
         setLoaded(true);
       });
   }, [id]);
+
+  function applyLocation(hit: AddressSuggestion) {
+    setForm((current) => ({
+      ...current,
+      street: hit.street || current.street,
+      house_number: hit.houseNumber || current.house_number,
+      postal_code: hit.postalCode || current.postal_code,
+      city: hit.city || current.city,
+      latitude: hit.latitude,
+      longitude: hit.longitude,
+    }));
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -116,6 +143,16 @@ export default function EditBranchPage() {
             required
           />
         </Field>
+        <Field label="Search address">
+          <AddressSearch onPick={applyLocation} />
+        </Field>
+        <Field label="Map location">
+          <LocationMapPicker
+            latitude={form.latitude}
+            longitude={form.longitude}
+            onPick={applyLocation}
+          />
+        </Field>
         <Field label="Street">
           <input
             className={inputClass}
@@ -151,21 +188,11 @@ export default function EditBranchPage() {
           </Field>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Latitude" hint="Used for map discovery">
-            <input
-              className={inputClass}
-              value={form.latitude}
-              onChange={(e) => setForm({ ...form, latitude: e.target.value })}
-              required
-            />
+          <Field label="Latitude">
+            <input className={inputClass} value={form.latitude} readOnly />
           </Field>
           <Field label="Longitude">
-            <input
-              className={inputClass}
-              value={form.longitude}
-              onChange={(e) => setForm({ ...form, longitude: e.target.value })}
-              required
-            />
+            <input className={inputClass} value={form.longitude} readOnly />
           </Field>
         </div>
         <div className="flex flex-wrap gap-2">

@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { pageResults, api } from "@/lib/api";
 import { clearSession } from "@/lib/auth";
+import { useActionCounts, useUnreadNotifications } from "@/lib/businessPoll";
 import { useAuth } from "@/lib/useAuth";
-import type { BusinessOrder } from "@/lib/types";
 import {
+  BellIcon,
   HomeIcon,
   PackageIcon,
   ReceiptIcon,
@@ -20,6 +20,7 @@ const links = [
   { href: "/business/orders", label: "Orders", icon: ReceiptIcon },
   { href: "/business/products", label: "Listings", icon: PackageIcon },
   { href: "/business/branches", label: "Branches", icon: StoreIcon },
+  { href: "/business/notifications", label: "Alerts", icon: BellIcon },
   { href: "/business/settings", label: "Settings", icon: SettingsIcon },
 ];
 
@@ -28,23 +29,15 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [pendingCount, setPendingCount] = useState(0);
+  const enabled = loggedIn && role === "business";
+  const { counts } = useActionCounts(Boolean(enabled));
+  const { unread } = useUnreadNotifications(Boolean(enabled));
 
   useEffect(() => {
     if (!loggedIn || role !== "business") {
       router.replace("/business/login");
     }
   }, [loggedIn, role, router]);
-
-  useEffect(() => {
-    if (!loggedIn || role !== "business") return;
-    api<BusinessOrder[] | { results: BusinessOrder[] }>("/api/business/orders", {
-      auth: true,
-      query: { status: "pending" },
-    })
-      .then((data) => setPendingCount(pageResults(data).length))
-      .catch(() => setPendingCount(0));
-  }, [loggedIn, role, pathname]);
 
   if (!loggedIn || role !== "business") {
     return <div className="grid min-h-dvh place-items-center text-sm text-muted">Loading…</div>;
@@ -57,6 +50,12 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
           ? pathname === link.href
           : pathname === link.href || pathname.startsWith(`${link.href}/`);
         const Icon = link.icon;
+        const badge =
+          link.href === "/business/orders"
+            ? counts.total
+            : link.href === "/business/notifications"
+              ? unread
+              : 0;
         return (
           <Link
             key={link.href}
@@ -70,9 +69,9 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
           >
             <Icon size={18} />
             <span className="flex-1">{link.label}</span>
-            {link.href === "/business/orders" && pendingCount > 0 ? (
+            {badge > 0 ? (
               <span className="rounded-full bg-deal px-2 py-0.5 text-[11px] font-bold text-white">
-                {pendingCount}
+                {badge}
               </span>
             ) : null}
           </Link>
@@ -114,13 +113,23 @@ export function BusinessShell({ children }: { children: React.ReactNode }) {
             <img src="/icon.png" alt="" className="h-8 w-8 rounded-lg" />
             <span className="font-display font-semibold">Aajhee Business</span>
           </Link>
-          <button
-            type="button"
-            className="rounded-xl bg-paper px-3 py-2 text-sm font-semibold"
-            onClick={() => setMenuOpen((v) => !v)}
-          >
-            {menuOpen ? "Close" : "Menu"}
-          </button>
+          <div className="flex items-center gap-2">
+            {counts.total > 0 ? (
+              <Link
+                href="/business/orders?status=pending"
+                className="rounded-full bg-deal px-2.5 py-1 text-xs font-bold text-white"
+              >
+                {counts.total} action
+              </Link>
+            ) : null}
+            <button
+              type="button"
+              className="rounded-xl bg-paper px-3 py-2 text-sm font-semibold"
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              {menuOpen ? "Close" : "Menu"}
+            </button>
+          </div>
         </header>
         {menuOpen ? (
           <div className="border-b border-line bg-[#1c1716] py-3 lg:hidden">{nav}</div>

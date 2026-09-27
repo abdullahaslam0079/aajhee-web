@@ -170,6 +170,38 @@ export default function BusinessOrderDetailPage() {
 
         <div className="space-y-4">
           <section className="card space-y-3 p-5">
+            <h2 className="font-semibold">Customer</h2>
+            <p className="text-sm font-semibold">
+              {order.customer_name || "Customer"}
+            </p>
+            {order.customer_phone ? (
+              <p className="text-sm">
+                <a className="font-semibold text-deal" href={`tel:${order.customer_phone}`}>
+                  {order.customer_phone}
+                </a>
+                {" · "}
+                <a
+                  className="font-semibold text-deal"
+                  href={`https://wa.me/${order.customer_phone.replace(/[^\d+]/g, "").replace(/^\+/, "")}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  WhatsApp
+                </a>
+              </p>
+            ) : (
+              <p className="text-sm text-muted">No phone on file</p>
+            )}
+            {order.customer_email ? (
+              <p className="text-sm">
+                <a className="text-deal" href={`mailto:${order.customer_email}`}>
+                  {order.customer_email}
+                </a>
+              </p>
+            ) : null}
+          </section>
+
+          <section className="card space-y-3 p-5">
             <h2 className="font-semibold">Delivery</h2>
             <p className="text-sm">
               <span className="text-muted">Method · </span>
