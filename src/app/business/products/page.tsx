@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Badge,
+  Button,
   ConfirmDialog,
   Empty,
   ErrorBox,
+  Field,
   PageHeader,
   Toggle,
+  inputClass,
 } from "@/components/ui";
 import { api, pageResults } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
@@ -20,16 +23,44 @@ export default function BusinessProductsPage() {
   const [error, setError] = useState("");
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [enabledFilter, setEnabledFilter] = useState("");
+  const [discountFilter, setDiscountFilter] = useState("");
+  const [selected, setSelected] = useState<number[]>([]);
+  const [bulkPercent, setBulkPercent] = useState("10");
+  const [bulkBusy, setBulkBusy] = useState(false);
 
-  function load() {
-    api<Product[] | { results: Product[] }>("/api/business/products", { auth: true })
+  const load = useCallback(() => {
+    api<Product[] | { results: Product[] }>("/api/business/products", {
+      auth: true,
+      query: {
+        search: search || undefined,
+        is_enabled: enabledFilter || undefined,
+        has_discount: discountFilter || undefined,
+      },
+    })
       .then((data) => setProducts(pageResults(data)))
       .catch((err) => setError(errorMessage(err)));
-  }
+  }, [search, enabledFilter, discountFilter]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => setSearch(searchInput.trim()), 300);
+    return () => window.clearTimeout(handle);
+  }, [searchInput]);
+
+  function toggleSelect(id: number) {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  function toggleSelectAll() {
+    if (selected.length === products.length) setSelected([]);
+    else setSelected(products.map((p) => p.id));
+  }
 
   async function toggleEnabled(product: Product, is_enabled: boolean) {
     setBusyId(product.id);
@@ -54,11 +85,43 @@ export default function BusinessProductsPage() {
     try {
       await api(`/api/business/products/${id}`, { method: "DELETE", auth: true });
       setDeleteId(null);
+      setSelected((prev) => prev.filter((x) => x !== id));
       load();
     } catch (err) {
       setError(errorMessage(err));
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function applyBulkDiscount(allProducts = false) {
+    const percent = Number(bulkPercent);
+    if (!Number.isFinite(percent) || percent <= 0 || percent > 100) {
+      setError("Enter a discount between 0.01 and 100.");
+      return;
+    }
+    if (!allProducts && selected.length === 0) {
+      setError("Select at least one listing, or apply to all.");
+      return;
+    }
+    setBulkBusy(true);
+    setError("");
+    try {
+      await api("/api/business/products/bulk-discount", {
+        method: "POST",
+        auth: true,
+        body: JSON.stringify({
+          discount_percent: percent,
+          product_ids: allProducts ? [] : selected,
+          all_products: allProducts,
+        }),
+      });
+      setSelected([]);
+      load();
+    } catch (err) {
+      setError(errorMessage(err, "Could not apply bulk discount."));
+    } finally {
+      setBulkBusy(false);
     }
   }
 
@@ -70,12 +133,92 @@ export default function BusinessProductsPage() {
         action={{ href: "/business/products/new", label: "Add listing" }}
       />
       {error ? <ErrorBox message={error} /> : null}
+
+      <div className="mb-4 flex flex-wrap gap-3">
+        <input
+          className={`${inputClass} min-w-[200px] flex-1`}
+          placeholder="Search listings…"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+        />
+        <select
+          className={`${inputClass} w-auto`}
+          value={enabledFilter}
+          onChange={(e) => setEnabledFilter(e.target.value)}
+        >
+          <option value="">All visibility</option>
+          <option value="true">Live only</option>
+          <option value="false">Hidden only</option>
+        </select>
+        <select
+          className={`${inputClass} w-auto`}
+          value={discountFilter}
+          onChange={(e) => setDiscountFilter(e.target.value)}
+        >
+          <option value="">All prices</option>
+          <option value="true">On sale</option>
+          <option value="false">Full price</option>
+        </select>
+      </div>
+
+      {products.length > 0 ? (
+        <div className="card mb-4 flex flex-wrap items-end gap-3 p-4">
+          <label className="flex items-center gap-2 text-sm font-semibold">
+            <input
+              type="checkbox"
+              checked={selected.length === products.length && products.length > 0}
+              onChange={toggleSelectAll}
+            />
+            Select all ({selected.length})
+          </label>
+          <Field label="Bulk discount %">
+            <input
+              className={`${inputClass} w-28`}
+              type="number"
+              min="0.01"
+              max="100"
+              step="0.01"
+              value={bulkPercent}
+              onChange={(e) => setBulkPercent(e.target.value)}
+            />
+          </Field>
+          <Button
+            type="button"
+            disabled={bulkBusy || selected.length === 0}
+            onClick={() => void applyBulkDiscount(false)}
+          >
+            {bulkBusy ? "Applying…" : `Apply to selected`}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={bulkBusy}
+            onClick={() => void applyBulkDiscount(true)}
+          >
+            Apply to all listings
+          </Button>
+        </div>
+      ) : null}
+
       {products.length === 0 ? (
-        <Empty title="No listings yet" body="Add your first product with photos and price." />
+        <Empty
+          title="No listings yet"
+          body={
+            search || enabledFilter || discountFilter
+              ? "No listings match these filters."
+              : "Add your first product with photos and price."
+          }
+        />
       ) : (
         <div className="space-y-2">
           {products.map((p) => (
             <article key={p.id} className="card flex flex-wrap items-center gap-3 p-4">
+              <input
+                type="checkbox"
+                checked={selected.includes(p.id)}
+                onChange={() => toggleSelect(p.id)}
+                aria-label={`Select ${p.name}`}
+              />
               {p.image_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={p.image_url} alt="" className="h-16 w-16 rounded-xl object-cover" />

@@ -7,13 +7,30 @@ import { compressImageFiles } from "@/lib/compressImage";
 import { errorMessage } from "@/lib/errors";
 import type { BusinessProfile, Category } from "@/lib/types";
 
+type PresencePayload = {
+  presence_mode?: string;
+  online_coverage?: string;
+  primary_city_id?: number | null;
+  primary_country_id?: number | null;
+  category_ids?: number[];
+};
+
+type Country = { id: number; code: string; name: string };
+type City = { id: number; name: string; country?: Country };
+
 export default function BusinessSettingsPage() {
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [name, setName] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [presenceMode, setPresenceMode] = useState("hybrid");
+  const [onlineCoverage, setOnlineCoverage] = useState("city");
+  const [countryId, setCountryId] = useState("");
+  const [cityId, setCityId] = useState("");
+  const [cityQuery, setCityQuery] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -23,11 +40,10 @@ export default function BusinessSettingsPage() {
     Promise.all([
       api<BusinessProfile>("/api/business/profile", { auth: true }),
       api<Category[]>("/api/categories").catch(() => []),
-      api<{ presence_mode?: string } | null>("/api/business/presence", { auth: true }).catch(
-        () => null,
-      ),
+      api<PresencePayload | null>("/api/business/presence", { auth: true }).catch(() => null),
+      api<Country[]>("/api/countries").catch(() => []),
     ])
-      .then(([p, cats, presence]) => {
+      .then(([p, cats, presence, countryList]) => {
         setProfile(p);
         setName(p.name || "");
         const catId =
@@ -40,12 +56,33 @@ export default function BusinessSettingsPage() {
                 : "";
         setCategoryId(catId);
         setCategories(Array.isArray(cats) ? cats : []);
-        if (p.presence_mode) setPresenceMode(p.presence_mode);
-        else if (presence?.presence_mode) setPresenceMode(presence.presence_mode);
+        setCountries(Array.isArray(countryList) ? countryList : []);
+        setPresenceMode(presence?.presence_mode || p.presence_mode || "hybrid");
+        setOnlineCoverage(presence?.online_coverage || p.online_coverage || "city");
+        if (presence?.primary_country_id) setCountryId(String(presence.primary_country_id));
+        if (presence?.primary_city_id) setCityId(String(presence.primary_city_id));
       })
       .catch((err) => setError(errorMessage(err)))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!countryId && !cityQuery) {
+      setCities([]);
+      return;
+    }
+    const handle = window.setTimeout(() => {
+      api<City[]>("/api/cities", {
+        query: {
+          country_id: countryId || undefined,
+          q: cityQuery || undefined,
+        },
+      })
+        .then((data) => setCities(Array.isArray(data) ? data : []))
+        .catch(() => setCities([]));
+    }, 250);
+    return () => window.clearTimeout(handle);
+  }, [countryId, cityQuery]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -63,7 +100,22 @@ export default function BusinessSettingsPage() {
         auth: true,
         body: data,
       });
-      setProfile(updated);
+      await api("/api/business/presence", {
+        method: "PATCH",
+        auth: true,
+        body: JSON.stringify({
+          presence_mode: presenceMode,
+          online_coverage: onlineCoverage,
+          primary_country_id: countryId ? Number(countryId) : null,
+          primary_city_id: cityId ? Number(cityId) : null,
+          category_ids: categoryId ? [Number(categoryId)] : [],
+        }),
+      });
+      setProfile({
+        ...updated,
+        presence_mode: presenceMode,
+        online_coverage: onlineCoverage,
+      });
       setLogoFile(null);
       setSaved(true);
     } catch (err) {
@@ -82,9 +134,11 @@ export default function BusinessSettingsPage() {
     );
   }
 
+  const showCoverage = presenceMode !== "instore_only";
+
   return (
     <div>
-      <PageHeader title="Settings" subtitle="Business profile, logo, and presence" />
+      <PageHeader title="Settings" subtitle="Business profile, logo, and where you sell" />
       <form onSubmit={save} className="card mx-auto max-w-xl space-y-4 p-5">
         {error ? <ErrorBox message={error} /> : null}
         {saved ? (
@@ -120,7 +174,7 @@ export default function BusinessSettingsPage() {
             ))}
           </select>
         </Field>
-        <Field label="Presence">
+        <Field label="Presence" hint="Controls whether customers find you online, in-store, or both.">
           <select
             className={inputClass}
             value={presenceMode}
@@ -131,6 +185,67 @@ export default function BusinessSettingsPage() {
             <option value="instore_only">In-store only</option>
           </select>
         </Field>
+        {showCoverage ? (
+          <>
+            <Field label="Online coverage" hint="City limits discovery to your primary city; country shows you nationwide.">
+              <select
+                className={inputClass}
+                value={onlineCoverage}
+                onChange={(e) => setOnlineCoverage(e.target.value)}
+              >
+                <option value="city">Primary city</option>
+                <option value="country">Whole country</option>
+              </select>
+            </Field>
+            <Field label="Primary country">
+              <select
+                className={inputClass}
+                value={countryId}
+                onChange={(e) => {
+                  setCountryId(e.target.value);
+                  setCityId("");
+                }}
+              >
+                <option value="">Select country</option>
+                {countries.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            {onlineCoverage === "city" ? (
+              <>
+                <Field label="Search city">
+                  <input
+                    className={inputClass}
+                    value={cityQuery}
+                    onChange={(e) => setCityQuery(e.target.value)}
+                    placeholder="Type a city name"
+                  />
+                </Field>
+                <Field label="Primary city">
+                  <select
+                    className={inputClass}
+                    value={cityId}
+                    onChange={(e) => setCityId(e.target.value)}
+                  >
+                    <option value="">Select city</option>
+                    {cities.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                        {c.country?.name ? ` · ${c.country.name}` : ""}
+                      </option>
+                    ))}
+                    {cityId && !cities.some((c) => String(c.id) === cityId) ? (
+                      <option value={cityId}>Current city #{cityId}</option>
+                    ) : null}
+                  </select>
+                </Field>
+              </>
+            ) : null}
+          </>
+        ) : null}
         <Field label="Logo">
           <input
             className={inputClass}

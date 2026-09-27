@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Badge, Empty, ErrorBox, PageHeader, Skeleton, StatCard } from "@/components/ui";
 import { api, pageResults } from "@/lib/api";
@@ -15,9 +15,23 @@ import { errorMessage } from "@/lib/errors";
 import { rs } from "@/lib/format";
 import type { Branch, BusinessOrder, BusinessProfile, BusinessStats, Product } from "@/lib/types";
 
+type TimeseriesPoint = {
+  date: string;
+  orders: number;
+  completed: number;
+  gmv: string;
+};
+
+type TimeseriesPayload = {
+  days: number;
+  series: TimeseriesPoint[];
+};
+
 export default function BusinessDashboardPage() {
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
   const [stats, setStats] = useState<BusinessStats | null>(null);
+  const [series, setSeries] = useState<TimeseriesPoint[]>([]);
+  const [days, setDays] = useState(30);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [recentOrders, setRecentOrders] = useState<BusinessOrder[]>([]);
@@ -28,13 +42,21 @@ export default function BusinessDashboardPage() {
     Promise.all([
       api<BusinessProfile>("/api/business/profile", { auth: true }),
       api<BusinessStats>("/api/business/stats", { auth: true }),
+      api<TimeseriesPayload>("/api/business/stats/timeseries", {
+        auth: true,
+        query: { days },
+      }).catch(() => ({ days, series: [] as TimeseriesPoint[] })),
       api<Branch[]>("/api/business/branches", { auth: true }),
       api<Product[] | { results: Product[] }>("/api/business/products", { auth: true }),
-      api<BusinessOrder[] | { results: BusinessOrder[] }>("/api/business/orders", { auth: true }),
+      api<BusinessOrder[] | { results: BusinessOrder[] }>("/api/business/orders", {
+        auth: true,
+        query: { page_size: 10 },
+      }),
     ])
-      .then(([p, s, b, productsPayload, ordersPayload]) => {
+      .then(([p, s, ts, b, productsPayload, ordersPayload]) => {
         setProfile(p);
         setStats(s);
+        setSeries(ts.series || []);
         setBranches(Array.isArray(b) ? b : []);
         const productList = pageResults(productsPayload);
         setProducts(productList);
@@ -42,7 +64,7 @@ export default function BusinessDashboardPage() {
       })
       .catch((err) => setError(errorMessage(err)))
       .finally(() => setLoading(false));
-  }, []);
+  }, [days]);
 
   const pending =
     stats?.by_status.find((row) => row.status === "pending")?.count ?? 0;
@@ -52,6 +74,45 @@ export default function BusinessDashboardPage() {
     (o) => o.status === "pending" || o.status === "payment_submitted",
   );
   const maxStatus = Math.max(1, ...(stats?.by_status.map((row) => row.count) ?? [1]));
+
+  const checklist = useMemo(() => {
+    const hasLogo = Boolean(profile?.logo_url || profile?.logo);
+    const hasBranch = branches.length > 0;
+    const hasListing = products.length > 0;
+    const hasPresence = Boolean(profile?.presence_mode);
+    const items = [
+      {
+        done: hasLogo,
+        label: "Add a business logo",
+        href: "/business/settings",
+      },
+      {
+        done: hasBranch,
+        label: "Create your first branch",
+        href: "/business/branches/new",
+      },
+      {
+        done: hasListing,
+        label: "Publish a listing",
+        href: "/business/products/new",
+      },
+      {
+        done: hasPresence,
+        label: "Set presence & coverage",
+        href: "/business/settings",
+      },
+    ];
+    const remaining = items.filter((i) => !i.done).length;
+    return { items, remaining };
+  }, [profile, branches, products]);
+
+  const chart = useMemo(() => {
+    const maxOrders = Math.max(1, ...series.map((p) => p.orders));
+    const maxGmv = Math.max(1, ...series.map((p) => Number(p.gmv) || 0));
+    const rangeGmv = series.reduce((sum, p) => sum + (Number(p.gmv) || 0), 0);
+    const rangeOrders = series.reduce((sum, p) => sum + p.orders, 0);
+    return { maxOrders, maxGmv, rangeGmv, rangeOrders };
+  }, [series]);
 
   return (
     <div>
@@ -68,6 +129,40 @@ export default function BusinessDashboardPage() {
         </div>
       ) : (
         <>
+          {checklist.remaining > 0 ? (
+            <section className="card mb-6 border border-line p-5">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 className="font-semibold">Get set up</h2>
+                  <p className="text-sm text-muted">
+                    {checklist.remaining} step{checklist.remaining === 1 ? "" : "s"} left before customers can order smoothly
+                  </p>
+                </div>
+              </div>
+              <ul className="space-y-2">
+                {checklist.items.map((item) => (
+                  <li key={item.label}>
+                    <Link
+                      href={item.href}
+                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition hover:bg-paper ${
+                        item.done ? "text-muted line-through" : "font-semibold"
+                      }`}
+                    >
+                      <span
+                        className={`grid h-5 w-5 place-items-center rounded-full text-[11px] ${
+                          item.done ? "bg-emerald-100 text-emerald-800" : "bg-paper text-muted"
+                        }`}
+                      >
+                        {item.done ? "✓" : ""}
+                      </span>
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
           {(pending > 0 || paymentSubmitted > 0 || needsAction.length > 0) && (
             <section className="card mb-6 border border-deal/20 bg-deal-soft/40 p-5">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -144,6 +239,66 @@ export default function BusinessDashboardPage() {
               href="/business/branches"
             />
           </div>
+
+          <section className="card mt-6 p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="font-semibold">Orders & revenue</h2>
+                <p className="text-sm text-muted">
+                  Last {days} days · {chart.rangeOrders} orders · {rs(chart.rangeGmv)} completed GMV
+                </p>
+              </div>
+              <div className="flex gap-2">
+                {[7, 30, 90].map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
+                      days === d ? "bg-deal text-white" : "border border-line hover:bg-paper"
+                    }`}
+                    onClick={() => setDays(d)}
+                  >
+                    {d}d
+                  </button>
+                ))}
+              </div>
+            </div>
+            {!series.length ? (
+              <p className="text-sm text-muted">No activity in this range yet.</p>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Orders / day</p>
+                  <div className="flex h-28 items-end gap-0.5">
+                    {series.map((point) => (
+                      <div
+                        key={`o-${point.date}`}
+                        className="group relative min-w-0 flex-1 rounded-t bg-deal/80 hover:bg-deal"
+                        style={{ height: `${Math.max(4, (point.orders / chart.maxOrders) * 100)}%` }}
+                        title={`${point.date}: ${point.orders} orders`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Completed GMV / day</p>
+                  <div className="flex h-28 items-end gap-0.5">
+                    {series.map((point) => {
+                      const gmv = Number(point.gmv) || 0;
+                      return (
+                        <div
+                          key={`g-${point.date}`}
+                          className="group relative min-w-0 flex-1 rounded-t bg-ink/70 hover:bg-ink"
+                          style={{ height: `${Math.max(4, (gmv / chart.maxGmv) * 100)}%` }}
+                          title={`${point.date}: ${rs(point.gmv)}`}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-3">
             <section className="card p-5 lg:col-span-1">

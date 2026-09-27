@@ -1,4 +1,4 @@
-import { clearSession, getAccessToken } from "./auth";
+import { clearSession, getAccessToken, getRefreshToken, setAccessToken } from "./auth";
 
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ||
@@ -27,11 +27,41 @@ function toQuery(params?: Query) {
   return text ? `?${text}` : "";
 }
 
+let refreshPromise: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  const refresh = getRefreshToken();
+  if (!refresh) return null;
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/token/refresh`, {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { access?: string; refresh?: string };
+    if (!data.access) return null;
+    setAccessToken(data.access, data.refresh);
+    return data.access;
+  } catch {
+    return null;
+  }
+}
+
+function refreshOnce() {
+  if (!refreshPromise) {
+    refreshPromise = refreshAccessToken().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
 export async function api<T>(
   path: string,
-  options: RequestInit & { query?: Query; auth?: boolean } = {},
+  options: RequestInit & { query?: Query; auth?: boolean; _retried?: boolean } = {},
 ): Promise<T> {
-  const { query, auth = false, headers, ...rest } = options;
+  const { query, auth = false, headers, _retried, ...rest } = options;
   const token = getAccessToken();
   const res = await fetch(`${API_BASE}${path}${toQuery(query)}`, {
     ...rest,
@@ -53,7 +83,13 @@ export async function api<T>(
     }
   }
 
-  if (res.status === 401 && (auth || token)) {
+  if (res.status === 401 && (auth || token) && !_retried) {
+    const next = await refreshOnce();
+    if (next) {
+      return api<T>(path, { ...options, _retried: true });
+    }
+    clearSession();
+  } else if (res.status === 401 && (auth || token)) {
     clearSession();
   }
 
@@ -74,4 +110,21 @@ export function pageResults<T>(payload: { results?: T[] } | T[] | null | undefin
   if (!payload) return [];
   if (Array.isArray(payload)) return payload;
   return payload.results ?? [];
+}
+
+export function pageMeta(payload: {
+  count?: number;
+  page?: number;
+  page_size?: number;
+  results?: unknown[];
+} | unknown[] | null | undefined) {
+  if (!payload || Array.isArray(payload)) {
+    const len = Array.isArray(payload) ? payload.length : 0;
+    return { count: len, page: 1, pageSize: len || 20 };
+  }
+  return {
+    count: payload.count ?? payload.results?.length ?? 0,
+    page: payload.page ?? 1,
+    pageSize: payload.page_size ?? 20,
+  };
 }

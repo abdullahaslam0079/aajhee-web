@@ -56,7 +56,7 @@ export default function BusinessRegisterPage() {
   return (
     <AuthCard
       title="Register your business"
-      subtitle="Create a merchant account, then add branches and offers."
+      subtitle="Create a merchant account, then add branches and listings."
       footer={
         <>
           Already a partner? <Link href="/business/login" className="font-bold text-deal">Log in</Link>

@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Badge, Empty, ErrorBox, PageHeader, inputClass } from "@/components/ui";
-import { api, pageResults } from "@/lib/api";
+import { api, pageMeta, pageResults } from "@/lib/api";
 import {
   formatDateTime,
   labelFulfillment,
@@ -32,6 +32,8 @@ const STATUS_FILTERS: Array<{ value: string; label: string }> = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
+const PAGE_SIZE = 20;
+
 export default function OrdersClient() {
   const searchParams = useSearchParams();
   const urlStatus = searchParams.get("status") || "";
@@ -40,24 +42,47 @@ export default function OrdersClient() {
   const [statusOverride, setStatusOverride] = useState<string | null>(null);
   const status = statusOverride ?? urlStatus;
   const [branchId, setBranchId] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState("");
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
 
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1);
+    }, 300);
+    return () => window.clearTimeout(handle);
+  }, [searchInput]);
+
   const load = useCallback(() => {
-    api<BusinessOrder[] | { results: BusinessOrder[] }>("/api/business/orders", {
-      auth: true,
-      query: {
-        status: status || undefined,
-        branch_id: branchId || undefined,
+    api<BusinessOrder[] | { results: BusinessOrder[]; count?: number; page?: number; page_size?: number }>(
+      "/api/business/orders",
+      {
+        auth: true,
+        query: {
+          status: status || undefined,
+          branch_id: branchId || undefined,
+          search: search || undefined,
+          date_from: dateFrom || undefined,
+          date_to: dateTo || undefined,
+          page,
+          page_size: PAGE_SIZE,
+        },
       },
-    })
+    )
       .then((data) => {
         setOrders(pageResults(data));
+        setTotalCount(pageMeta(data).count);
         setUpdatedAt(new Date());
       })
       .catch((err) => setError(errorMessage(err)));
-  }, [status, branchId]);
+  }, [status, branchId, search, dateFrom, dateTo, page]);
 
   useEffect(() => {
     load();
@@ -76,13 +101,7 @@ export default function OrdersClient() {
       .catch(() => undefined);
   }, []);
 
-  const counts = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const order of orders) {
-      map[order.status] = (map[order.status] || 0) + 1;
-    }
-    return map;
-  }, [orders]);
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   async function setOrderStatus(publicId: string, next: OrderStatus) {
     setBusyId(publicId);
@@ -114,23 +133,33 @@ export default function OrdersClient() {
       {error ? <ErrorBox message={error} /> : null}
 
       <div className="mb-4 flex flex-wrap gap-3">
+        <input
+          className={`${inputClass} min-w-[200px] flex-1`}
+          placeholder="Search order ID, customer, phone…"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+        />
         <select
           className={`${inputClass} w-auto min-w-[160px]`}
           value={status}
-          onChange={(e) => setStatusOverride(e.target.value)}
+          onChange={(e) => {
+            setStatusOverride(e.target.value);
+            setPage(1);
+          }}
         >
           {STATUS_FILTERS.map((filter) => (
             <option key={filter.value || "all"} value={filter.value}>
               {filter.label}
-              {!filter.value && orders.length ? ` (${orders.length})` : ""}
-              {filter.value && counts[filter.value] ? ` (${counts[filter.value]})` : ""}
             </option>
           ))}
         </select>
         <select
           className={`${inputClass} w-auto min-w-[180px]`}
           value={branchId}
-          onChange={(e) => setBranchId(e.target.value)}
+          onChange={(e) => {
+            setBranchId(e.target.value);
+            setPage(1);
+          }}
         >
           <option value="">All branches</option>
           {branches.map((branch) => (
@@ -139,6 +168,26 @@ export default function OrdersClient() {
             </option>
           ))}
         </select>
+        <input
+          className={`${inputClass} w-auto`}
+          type="date"
+          value={dateFrom}
+          onChange={(e) => {
+            setDateFrom(e.target.value);
+            setPage(1);
+          }}
+          aria-label="From date"
+        />
+        <input
+          className={`${inputClass} w-auto`}
+          type="date"
+          value={dateTo}
+          onChange={(e) => {
+            setDateTo(e.target.value);
+            setPage(1);
+          }}
+          aria-label="To date"
+        />
         <button
           type="button"
           className="rounded-xl border border-line px-3 py-2 text-sm font-semibold hover:bg-paper"
@@ -216,6 +265,32 @@ export default function OrdersClient() {
           })}
         </div>
       )}
+
+      {totalCount > PAGE_SIZE ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted">
+            {totalCount} orders · page {page} of {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className="rounded-xl border border-line px-3 py-2 text-sm font-semibold disabled:opacity-40"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              className="rounded-xl border border-line px-3 py-2 text-sm font-semibold disabled:opacity-40"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -13,6 +13,17 @@ export function getAccessToken() {
   return localStorage.getItem(ACCESS_KEY);
 }
 
+export function getRefreshToken() {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(REFRESH_KEY);
+}
+
+export function setAccessToken(access: string, refresh?: string) {
+  localStorage.setItem(ACCESS_KEY, access);
+  if (refresh) localStorage.setItem(REFRESH_KEY, refresh);
+  window.dispatchEvent(new Event("aajhee-auth"));
+}
+
 export function getRole(): Role | null {
   if (typeof window === "undefined") return null;
   return (localStorage.getItem(ROLE_KEY) as Role | null) ?? null;

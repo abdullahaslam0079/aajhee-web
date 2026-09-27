@@ -43,7 +43,7 @@ export default function BusinessLoginPage() {
   return (
     <AuthCard
       title="Merchant login"
-      subtitle="Manage branches and offers for your store."
+      subtitle="Manage branches, listings, and orders for your store."
       footer={
         <>
           New partner? <Link href="/business/register" className="font-bold text-deal">Register</Link>
@@ -60,6 +60,11 @@ export default function BusinessLoginPage() {
         <Field label="Password">
           <input className={inputClass} type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </Field>
+        <div className="text-right">
+          <Link href="/business/forgot-password" className="text-sm font-semibold text-deal">
+            Forgot password?
+          </Link>
+        </div>
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Signing in…" : "Log in"}
         </Button>
