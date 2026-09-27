@@ -2,20 +2,29 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AuthCard } from "@/components/AuthCard";
 import { Button, ErrorBox, Field, inputClass } from "@/components/ui";
 import { api } from "@/lib/api";
 import { setSession } from "@/lib/auth";
 import { errorMessage } from "@/lib/errors";
+import { useAuth } from "@/lib/useAuth";
 import type { AuthPayload } from "@/lib/types";
 
 export default function BusinessLoginPage() {
   const router = useRouter();
+  const { ready, loggedIn, role } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!ready) return;
+    if (loggedIn && role === "business") {
+      router.replace("/business");
+    }
+  }, [ready, loggedIn, role, router]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -26,6 +35,9 @@ export default function BusinessLoginPage() {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
+      if (!data.access) {
+        throw new Error("Login response missing access token.");
+      }
       setSession({
         access: data.access,
         refresh: data.refresh,
@@ -38,6 +50,10 @@ export default function BusinessLoginPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (!ready || (loggedIn && role === "business")) {
+    return <div className="grid min-h-dvh place-items-center text-sm text-muted">Loading…</div>;
   }
 
   return (

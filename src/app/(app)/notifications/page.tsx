@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/useAuth";
 import type { NotificationItem, Paginated } from "@/lib/types";
 
 export default function NotificationsPage() {
-  const { loggedIn } = useAuth();
+  const { loggedIn, ready } = useAuth();
   const router = useRouter();
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [error, setError] = useState("");
@@ -21,19 +21,20 @@ export default function NotificationsPage() {
   }
 
   useEffect(() => {
+    if (!ready) return;
     if (!loggedIn) {
       router.replace("/login");
       return;
     }
     load();
-  }, [loggedIn, router]);
+  }, [ready, loggedIn, router]);
 
   async function markAll() {
     await api("/api/notifications/read-all", { method: "POST", auth: true });
     load();
   }
 
-  if (!loggedIn) return null;
+  if (!ready || !loggedIn) return null;
 
   return (
     <div>

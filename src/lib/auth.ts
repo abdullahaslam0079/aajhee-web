@@ -54,7 +54,9 @@ export function setSession(payload: {
   role: Role;
 }) {
   localStorage.setItem(ACCESS_KEY, payload.access);
-  if (payload.refresh) localStorage.setItem(REFRESH_KEY, payload.refresh);
+  if (payload.refresh) {
+    localStorage.setItem(REFRESH_KEY, payload.refresh);
+  }
   localStorage.setItem(USER_KEY, JSON.stringify(payload.user));
   localStorage.setItem(ROLE_KEY, payload.role);
   userRaw = localStorage.getItem(USER_KEY);

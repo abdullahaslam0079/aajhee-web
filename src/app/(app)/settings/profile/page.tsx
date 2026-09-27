@@ -10,15 +10,16 @@ import { useAuth } from "@/lib/useAuth";
 import type { User } from "@/lib/types";
 
 export default function EditProfilePage() {
-  const { loggedIn, user } = useAuth();
+  const { loggedIn, user, ready } = useAuth();
   const router = useRouter();
   const [name, setName] = useState(user?.name || [user?.first_name, user?.last_name].filter(Boolean).join(" "));
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    if (!ready) return;
     if (!loggedIn) router.replace("/login");
-  }, [loggedIn, router]);
+  }, [ready, loggedIn, router]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();

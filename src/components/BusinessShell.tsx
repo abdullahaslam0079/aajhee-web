@@ -25,21 +25,22 @@ const links = [
 ];
 
 export function BusinessShell({ children }: { children: React.ReactNode }) {
-  const { loggedIn, role } = useAuth();
+  const { loggedIn, role, ready } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const enabled = loggedIn && role === "business";
+  const enabled = ready && loggedIn && role === "business";
   const { counts } = useActionCounts(Boolean(enabled));
   const { unread } = useUnreadNotifications(Boolean(enabled));
 
   useEffect(() => {
+    if (!ready) return;
     if (!loggedIn || role !== "business") {
       router.replace("/business/login");
     }
-  }, [loggedIn, role, router]);
+  }, [ready, loggedIn, role, router]);
 
-  if (!loggedIn || role !== "business") {
+  if (!ready || !loggedIn || role !== "business") {
     return <div className="grid min-h-dvh place-items-center text-sm text-muted">Loading…</div>;
   }
 

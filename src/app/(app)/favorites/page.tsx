@@ -11,12 +11,13 @@ import { useAuth } from "@/lib/useAuth";
 import type { MapBranch, Paginated } from "@/lib/types";
 
 export default function FavoritesPage() {
-  const { loggedIn } = useAuth();
+  const { loggedIn, ready } = useAuth();
   const router = useRouter();
   const [branches, setBranches] = useState<MapBranch[]>([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!ready) return;
     if (!loggedIn) {
       router.replace("/login");
       return;
@@ -24,9 +25,9 @@ export default function FavoritesPage() {
     api<Paginated<MapBranch>>("/api/user/favorites", { auth: true })
       .then((data) => setBranches(pageResults(data)))
       .catch((err) => setError(errorMessage(err)));
-  }, [loggedIn, router]);
+  }, [ready, loggedIn, router]);
 
-  if (!loggedIn) return null;
+  if (!ready || !loggedIn) return null;
 
   return (
     <div>

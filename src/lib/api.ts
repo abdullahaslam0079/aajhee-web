@@ -41,7 +41,8 @@ async function refreshAccessToken(): Promise<string | null> {
     if (!res.ok) return null;
     const data = (await res.json()) as { access?: string; refresh?: string };
     if (!data.access) return null;
-    setAccessToken(data.access, data.refresh);
+    // ROTATE_REFRESH_TOKENS blacklists the old refresh — always persist the new one.
+    setAccessToken(data.access, data.refresh ?? refresh);
     return data.access;
   } catch {
     return null;
@@ -84,12 +85,16 @@ export async function api<T>(
   }
 
   if (res.status === 401 && (auth || token) && !_retried) {
+    const hadRefresh = Boolean(getRefreshToken());
     const next = await refreshOnce();
     if (next) {
       return api<T>(path, { ...options, _retried: true });
     }
-    clearSession();
-  } else if (res.status === 401 && (auth || token)) {
+    // Only wipe the session when we know auth is dead (refresh failed or missing).
+    if (hadRefresh || auth) {
+      clearSession();
+    }
+  } else if (res.status === 401 && (auth || token) && _retried) {
     clearSession();
   }
 

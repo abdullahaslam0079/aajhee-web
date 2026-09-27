@@ -10,7 +10,7 @@ import { useAuth } from "@/lib/useAuth";
 import type { Address } from "@/lib/types";
 
 export default function AddressesPage() {
-  const { loggedIn } = useAuth();
+  const { loggedIn, ready } = useAuth();
   const router = useRouter();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [error, setError] = useState("");
@@ -31,12 +31,13 @@ export default function AddressesPage() {
   }
 
   useEffect(() => {
+    if (!ready) return;
     if (!loggedIn) {
       router.replace("/login");
       return;
     }
     load();
-  }, [loggedIn, router]);
+  }, [ready, loggedIn, router]);
 
   async function addAddress(e: React.FormEvent) {
     e.preventDefault();
@@ -64,7 +65,7 @@ export default function AddressesPage() {
     }
   }
 
-  if (!loggedIn) return null;
+  if (!ready || !loggedIn) return null;
 
   return (
     <div className="mx-auto max-w-xl">
