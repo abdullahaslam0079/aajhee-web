@@ -8,6 +8,7 @@ import { AddressSearch } from "@/components/AddressSearch";
 import { Button, ErrorBox, Field, PageHeader, inputClass } from "@/components/ui";
 import { api } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
+import { primaryCity } from "@/lib/launchCities";
 import type { AddressSuggestion } from "@/lib/geocode";
 
 const LocationMapPicker = dynamic(
@@ -26,14 +27,15 @@ export default function NewBranchPage() {
   const router = useRouter();
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const launchCity = primaryCity();
   const [form, setForm] = useState({
     name: "",
     street: "",
     house_number: "",
     postal_code: "",
-    city: "Lahore",
-    latitude: "31.520400",
-    longitude: "74.358700",
+    city: launchCity.name,
+    latitude: launchCity.latitude.toFixed(6),
+    longitude: launchCity.longitude.toFixed(6),
   });
 
   function applyLocation(hit: AddressSuggestion) {

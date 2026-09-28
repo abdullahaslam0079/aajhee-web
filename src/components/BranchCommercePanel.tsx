@@ -21,11 +21,11 @@ const emptyContact = (): BranchContact => ({
 const defaultFulfillment = (): BranchFulfillmentSettings => ({
   pickup_enabled: true,
   pickup_radius_km: "15.00",
-  local_same_day_enabled: true,
-  local_delivery_fee: "0.00",
-  local_max_delivery_hours: 24,
+  same_day_enabled: true,
+  same_day_fee: "0.00",
+  same_day_max_delivery_hours: 24,
   nationwide_enabled: false,
-  nationwide_delivery_fee: "0.00",
+  nationwide_delivery_fee: "300.00",
   nationwide_max_delivery_hours: 72,
   customer_cancel_policy: "window_minutes",
   customer_cancel_window_minutes: 30,
@@ -97,7 +97,7 @@ export function BranchCommercePanel({ branchId }: { branchId: number }) {
         body: JSON.stringify({
           ...fulfillment,
           pickup_radius_km: String(fulfillment.pickup_radius_km),
-          local_delivery_fee: String(fulfillment.local_delivery_fee),
+          same_day_fee: String(fulfillment.same_day_fee),
           nationwide_delivery_fee: String(fulfillment.nationwide_delivery_fee),
         }),
       });
@@ -208,24 +208,24 @@ export function BranchCommercePanel({ branchId }: { branchId: number }) {
 
         <div className="space-y-3 rounded-xl bg-paper/70 p-4">
           <Toggle
-            checked={fulfillment.local_same_day_enabled}
-            onChange={(v) => setFulfillment({ ...fulfillment, local_same_day_enabled: v })}
-            label="Local same-day delivery"
+            label="Same-day delivery (store city)"
+            checked={fulfillment.same_day_enabled}
+            onChange={(v) => setFulfillment({ ...fulfillment, same_day_enabled: v })}
           />
-          <Field label="Local delivery fee">
+          <Field label="Same-day fee (Rs)" hint="Default Rs 0">
             <input
               className={inputClass}
-              value={fulfillment.local_delivery_fee}
-              onChange={(e) => setFulfillment({ ...fulfillment, local_delivery_fee: e.target.value })}
+              value={fulfillment.same_day_fee}
+              onChange={(e) => setFulfillment({ ...fulfillment, same_day_fee: e.target.value })}
             />
           </Field>
           <Field label="Max hours">
             <input
               className={inputClass}
               type="number"
-              value={fulfillment.local_max_delivery_hours}
+              value={fulfillment.same_day_max_delivery_hours}
               onChange={(e) =>
-                setFulfillment({ ...fulfillment, local_max_delivery_hours: Number(e.target.value) })
+                setFulfillment({ ...fulfillment, same_day_max_delivery_hours: Number(e.target.value) })
               }
             />
           </Field>
@@ -243,7 +243,7 @@ export function BranchCommercePanel({ branchId }: { branchId: number }) {
             label="Nationwide delivery"
           />
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Nationwide fee">
+            <Field label="Nationwide fee (Rs)" hint="Default Rs 300">
               <input
                 className={inputClass}
                 value={fulfillment.nationwide_delivery_fee}
@@ -302,9 +302,9 @@ export function BranchCommercePanel({ branchId }: { branchId: number }) {
           <Toggle
             checked={fulfillment.jazzcash_enabled}
             onChange={(v) => setFulfillment({ ...fulfillment, jazzcash_enabled: v })}
-            label="JazzCash — customer uploads payment screenshot"
+            label="Mobile wallet (JazzCash / Easypaisa) — customer uploads receipt at checkout"
           />
-          <Field label="JazzCash instructions" hint="JazzCash number / account name">
+          <Field label="Wallet instructions" hint="JazzCash / Easypaisa number">
             <textarea
               className={inputClass}
               rows={3}

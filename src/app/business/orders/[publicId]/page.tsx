@@ -18,6 +18,7 @@ import {
   formatDateTime,
   labelFulfillment,
   labelPayment,
+  labelPaymentStatus,
   labelStatus,
   nextActions,
   requiresPaymentProof,
@@ -200,6 +201,10 @@ export default function BusinessOrderDetailPage() {
                 </a>
               </p>
             ) : null}
+            <p className="text-sm">
+              <span className="text-muted">Payment status · </span>
+              {labelPaymentStatus(order.payment_status)}
+            </p>
           </section>
 
           <section className="card space-y-3 p-5">
@@ -213,6 +218,18 @@ export default function BusinessOrderDetailPage() {
             ) : (
               <p className="text-sm text-muted">No delivery address (pickup or not provided).</p>
             )}
+            {order.delivery_house_number ? (
+              <p className="text-sm">
+                <span className="text-muted">House / flat · </span>
+                {order.delivery_house_number}
+              </p>
+            ) : null}
+            {order.delivery_landmark ? (
+              <p className="text-sm">
+                <span className="text-muted">Landmark · </span>
+                {order.delivery_landmark}
+              </p>
+            ) : null}
             {order.delivery_snapshot?.promised_by ? (
               <p className="text-sm text-muted">
                 Promised by {formatDateTime(order.delivery_snapshot.promised_by)}

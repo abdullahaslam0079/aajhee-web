@@ -2,10 +2,21 @@ import type { BusinessOrder, FulfillmentType, OrderStatus, PaymentMethod } from 
 
 export const BUSINESS_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending: ["accepted", "cancelled"],
-  accepted: ["awaiting_payment", "preparing", "cancelled"],
+  accepted: [
+    "awaiting_payment",
+    "preparing",
+    "ready_for_pickup",
+    "out_for_delivery",
+    "cancelled",
+  ],
   awaiting_payment: ["payment_submitted", "cancelled"],
   payment_submitted: ["paid_confirmed", "awaiting_payment", "cancelled"],
-  paid_confirmed: ["preparing", "cancelled"],
+  paid_confirmed: [
+    "preparing",
+    "ready_for_pickup",
+    "out_for_delivery",
+    "cancelled",
+  ],
   preparing: ["ready_for_pickup", "out_for_delivery", "cancelled"],
   ready_for_pickup: ["completed", "cancelled"],
   out_for_delivery: ["completed", "cancelled"],
@@ -19,11 +30,11 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
   cancelled: "Cancelled",
   awaiting_payment: "Awaiting payment",
   payment_submitted: "Payment submitted",
-  paid_confirmed: "Paid",
+  paid_confirmed: "Paid confirmed",
   preparing: "Preparing",
   ready_for_pickup: "Ready for pickup",
   out_for_delivery: "Out for delivery",
-  completed: "Completed",
+  completed: "Delivered",
 };
 
 export const STATUS_ACTION_LABELS: Partial<Record<OrderStatus, string>> = {
@@ -33,15 +44,15 @@ export const STATUS_ACTION_LABELS: Partial<Record<OrderStatus, string>> = {
   preparing: "Start preparing",
   ready_for_pickup: "Ready for pickup",
   out_for_delivery: "Out for delivery",
-  completed: "Mark completed",
+  completed: "Mark delivered",
   paid_confirmed: "Confirm paid",
   payment_submitted: "Mark payment submitted",
 };
 
 export const FULFILLMENT_LABELS: Record<string, string> = {
-  pickup: "Pickup",
-  local_same_day: "Local delivery",
-  nationwide: "Nationwide",
+  pickup: "In-store pickup",
+  local_same_day: "Same-day delivery",
+  nationwide: "Nationwide / standard delivery",
 };
 
 export const PAYMENT_LABELS: Record<string, string> = {
@@ -49,10 +60,16 @@ export const PAYMENT_LABELS: Record<string, string> = {
   cash_on_delivery: "Cash on delivery",
   bank_transfer: "Bank transfer",
   stripe: "Card",
-  jazzcash: "JazzCash",
+  jazzcash: "Mobile wallet (JazzCash / Easypaisa)",
 };
 
-/** Methods where the customer uploads a transaction screenshot after accept. */
+export const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  unpaid: "Unpaid",
+  awaiting_confirmation: "Awaiting confirmation",
+  paid: "Paid",
+};
+
+/** Methods where the customer uploads a transaction screenshot at checkout. */
 export const PAYMENT_PROOF_METHODS = new Set<string>([
   "bank_transfer",
   "stripe",
@@ -90,7 +107,16 @@ export function labelStatus(status: string) {
   return STATUS_LABELS[status as OrderStatus] || status.replaceAll("_", " ");
 }
 
-export function labelFulfillment(value: string) {
+export function labelPaymentStatus(status?: string | null) {
+  if (!status) return "—";
+  return PAYMENT_STATUS_LABELS[status] || status.replaceAll("_", " ");
+}
+
+export function labelFulfillment(value: string, city?: string | null) {
+  if (value === "local_same_day") {
+    const cleaned = (city || "").trim();
+    if (cleaned) return `Same-day delivery in ${cleaned}`;
+  }
   return FULFILLMENT_LABELS[value] || value.replaceAll("_", " ");
 }
 
@@ -111,13 +137,18 @@ export function nextActions(order: {
   status: OrderStatus;
   fulfillment_type?: FulfillmentType | string;
   payment_method?: PaymentMethod | string;
+  payment_status?: string | null;
 }): OrderStatus[] {
   let actions = [...(BUSINESS_STATUS_TRANSITIONS[order.status] || [])];
 
   // Customer uploads proof — merchants don't mark payment_submitted
   actions = actions.filter((s) => s !== "payment_submitted");
 
-  if (order.status === "preparing") {
+  if (
+    order.status === "accepted" ||
+    order.status === "paid_confirmed" ||
+    order.status === "preparing"
+  ) {
     if (isPickupFulfillment(order.fulfillment_type)) {
       actions = actions.filter((s) => s !== "out_for_delivery");
     } else if (isDeliveryFulfillment(order.fulfillment_type)) {
@@ -127,7 +158,15 @@ export function nextActions(order: {
 
   if (order.status === "accepted") {
     if (requiresPaymentProof(order.payment_method)) {
-      actions = actions.filter((s) => s !== "preparing");
+      if (order.payment_status !== "paid") {
+        actions = actions.filter(
+          (s) =>
+            s !== "preparing" &&
+            s !== "ready_for_pickup" &&
+            s !== "out_for_delivery",
+        );
+      }
+      actions = actions.filter((s) => s !== "awaiting_payment");
     } else {
       actions = actions.filter((s) => s !== "awaiting_payment");
     }
@@ -136,7 +175,12 @@ export function nextActions(order: {
   return actions;
 }
 
-export function nextActionsForOrder(order: Pick<BusinessOrder, "status" | "fulfillment_type" | "payment_method">) {
+export function nextActionsForOrder(
+  order: Pick<
+    BusinessOrder,
+    "status" | "fulfillment_type" | "payment_method" | "payment_status"
+  >,
+) {
   return nextActions(order);
 }
 

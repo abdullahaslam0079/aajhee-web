@@ -234,9 +234,9 @@ export type BranchContact = {
 export type BranchFulfillmentSettings = {
   pickup_enabled: boolean;
   pickup_radius_km: string;
-  local_same_day_enabled: boolean;
-  local_delivery_fee: string;
-  local_max_delivery_hours: number;
+  same_day_enabled: boolean;
+  same_day_fee: string;
+  same_day_max_delivery_hours: number;
   nationwide_enabled: boolean;
   nationwide_delivery_fee: string;
   nationwide_max_delivery_hours: number;
@@ -283,6 +283,8 @@ export type OrderDeliverySnapshot = {
   customer_city_name?: string;
 };
 
+export type PaymentStatus = "unpaid" | "awaiting_confirmation" | "paid";
+
 export type BusinessOrder = {
   id: number;
   public_id: string;
@@ -291,12 +293,15 @@ export type BusinessOrder = {
   branch_id: number;
   branch_name: string;
   status: OrderStatus;
+  payment_status?: PaymentStatus | string;
   fulfillment_type: FulfillmentType;
   payment_method: PaymentMethod;
   subtotal: string;
   delivery_fee: string;
   total: string;
   delivery_address_text: string;
+  delivery_house_number?: string;
+  delivery_landmark?: string;
   customer_notes: string;
   customer_name?: string;
   customer_phone?: string | null;
