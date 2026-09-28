@@ -27,6 +27,7 @@ import {
 } from "@/lib/commerce";
 import { errorMessage } from "@/lib/errors";
 import { rs } from "@/lib/format";
+import { whatsappHref } from "@/lib/merchantAlerts";
 import type { BusinessOrder, OrderStatus } from "@/lib/types";
 
 export default function BusinessOrderDetailPage() {
@@ -50,6 +51,10 @@ export default function BusinessOrderDetailPage() {
   }, [publicId]);
 
   async function setStatus(status: OrderStatus) {
+    if (status === "cancelled" && !cancelReason.trim()) {
+      setError("A cancel reason is required.");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
@@ -58,7 +63,7 @@ export default function BusinessOrderDetailPage() {
         auth: true,
         body: JSON.stringify({
           status,
-          reason: status === "cancelled" ? cancelReason : undefined,
+          reason: status === "cancelled" ? cancelReason.trim() : undefined,
         }),
       });
       setOrder(updated);
@@ -109,6 +114,7 @@ export default function BusinessOrderDetailPage() {
   }
 
   const actions = nextActions(order);
+  const wa = whatsappHref(order.customer_phone);
 
   return (
     <div>
@@ -126,7 +132,9 @@ export default function BusinessOrderDetailPage() {
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Badge tone={statusTone(order.status)}>{labelStatus(order.status)}</Badge>
         <Badge>{labelFulfillment(order.fulfillment_type)}</Badge>
+        {order.fulfillment_type === "local_same_day" ? <Badge tone="deal">Same-day</Badge> : null}
         <Badge>{labelPayment(order.payment_method)}</Badge>
+        <Badge>{labelPaymentStatus(order.payment_status)}</Badge>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
@@ -181,15 +189,19 @@ export default function BusinessOrderDetailPage() {
                 <a className="font-semibold text-deal" href={`tel:${order.customer_phone}`}>
                   {order.customer_phone}
                 </a>
-                {" · "}
-                <a
-                  className="font-semibold text-deal"
-                  href={`https://wa.me/${order.customer_phone.replace(/[^\d+]/g, "").replace(/^\+/, "")}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  WhatsApp
-                </a>
+                {wa ? (
+                  <>
+                    {" · "}
+                    <a
+                      className="font-semibold text-deal"
+                      href={wa}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Chat on WhatsApp
+                    </a>
+                  </>
+                ) : null}
               </p>
             ) : (
               <p className="text-sm text-muted">No phone on file</p>
@@ -263,12 +275,13 @@ export default function BusinessOrderDetailPage() {
               </div>
             )}
             {actions.includes("cancelled") ? (
-              <Field label="Cancel reason (optional)">
+              <Field label="Cancel reason (required)">
                 <input
                   className={inputClass}
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
                   placeholder="Out of stock, closed, etc."
+                  required
                 />
               </Field>
             ) : null}

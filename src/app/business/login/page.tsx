@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { AuthCard } from "@/components/AuthCard";
+import { AuthCard, MERCHANT_AUTH_BRANDING } from "@/components/AuthCard";
 import { Button, ErrorBox, Field, inputClass } from "@/components/ui";
 import { api } from "@/lib/api";
 import { setSession } from "@/lib/auth";
@@ -60,6 +60,7 @@ export default function BusinessLoginPage() {
     <AuthCard
       title="Merchant login"
       subtitle="Manage branches, listings, and orders for your store."
+      {...MERCHANT_AUTH_BRANDING}
       footer={
         <>
           New partner? <Link href="/business/register" className="font-bold text-deal">Register</Link>

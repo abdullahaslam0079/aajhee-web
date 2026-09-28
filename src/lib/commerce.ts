@@ -34,7 +34,7 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
   preparing: "Preparing",
   ready_for_pickup: "Ready for pickup",
   out_for_delivery: "Out for delivery",
-  completed: "Delivered",
+  completed: "Completed",
 };
 
 export const STATUS_ACTION_LABELS: Partial<Record<OrderStatus, string>> = {
@@ -44,7 +44,7 @@ export const STATUS_ACTION_LABELS: Partial<Record<OrderStatus, string>> = {
   preparing: "Start preparing",
   ready_for_pickup: "Ready for pickup",
   out_for_delivery: "Out for delivery",
-  completed: "Mark delivered",
+  completed: "Mark completed",
   paid_confirmed: "Confirm paid",
   payment_submitted: "Mark payment submitted",
 };
@@ -182,6 +182,10 @@ export function nextActionsForOrder(
   >,
 ) {
   return nextActions(order);
+}
+
+export function isSameDayOrder(fulfillment?: FulfillmentType | string) {
+  return fulfillment === "local_same_day";
 }
 
 export function formatDateTime(value?: string | null) {

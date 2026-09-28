@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, ErrorBox, Field, PageHeader, Skeleton, inputClass } from "@/components/ui";
+import {
+  Badge,
+  Button,
+  ErrorBox,
+  Field,
+  PageHeader,
+  Skeleton,
+  Toggle,
+  inputClass,
+} from "@/components/ui";
 import { api } from "@/lib/api";
 import { compressImageFiles } from "@/lib/compressImage";
 import { errorMessage } from "@/lib/errors";
@@ -18,12 +27,42 @@ type PresencePayload = {
 type Country = { id: number; code: string; name: string };
 type City = { id: number; name: string; country?: Country };
 
+const DAY_KEYS = [
+  { key: "mon", label: "Monday" },
+  { key: "tue", label: "Tuesday" },
+  { key: "wed", label: "Wednesday" },
+  { key: "thu", label: "Thursday" },
+  { key: "fri", label: "Friday" },
+  { key: "sat", label: "Saturday" },
+  { key: "sun", label: "Sunday" },
+] as const;
+
+type DayHours = { open: string; close: string; closed: boolean };
+
+function defaultHours(): Record<string, DayHours> {
+  return Object.fromEntries(
+    DAY_KEYS.map(({ key }) => [key, { open: "10:00", close: "22:00", closed: false }]),
+  );
+}
+
+function verificationLabel(status?: string) {
+  if (status === "verified") return "Verified";
+  if (status === "suspended") return "Suspended";
+  if (status === "under_review") return "Under review";
+  return status || "Under review";
+}
+
 export default function BusinessSettingsPage() {
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [instagramUrl, setInstagramUrl] = useState("");
+  const [notificationWhatsapp, setNotificationWhatsapp] = useState("");
+  const [isPaused, setIsPaused] = useState(false);
+  const [hours, setHours] = useState<Record<string, DayHours>>(defaultHours());
   const [categoryId, setCategoryId] = useState("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [presenceMode, setPresenceMode] = useState("hybrid");
@@ -46,6 +85,11 @@ export default function BusinessSettingsPage() {
       .then(([p, cats, presence, countryList]) => {
         setProfile(p);
         setName(p.name || "");
+        setPhone(p.phone || "");
+        setInstagramUrl(p.instagram_url || "");
+        setNotificationWhatsapp(p.notification_whatsapp || "");
+        setIsPaused(Boolean(p.is_paused));
+        setHours({ ...defaultHours(), ...(p.business_hours || {}) } as Record<string, DayHours>);
         const catId =
           p.category_id != null
             ? String(p.category_id)
@@ -94,6 +138,11 @@ export default function BusinessSettingsPage() {
       data.set("name", name);
       if (categoryId) data.set("category_id", categoryId);
       data.set("presence_mode", presenceMode);
+      data.set("phone", phone);
+      data.set("instagram_url", instagramUrl);
+      data.set("notification_whatsapp", notificationWhatsapp);
+      data.set("is_paused", String(isPaused));
+      data.set("business_hours", JSON.stringify(hours));
       if (logoFile) data.set("logo", logoFile);
       const updated = await api<BusinessProfile>("/api/business/profile", {
         method: "PUT",
@@ -115,6 +164,11 @@ export default function BusinessSettingsPage() {
         ...updated,
         presence_mode: presenceMode,
         online_coverage: onlineCoverage,
+        phone,
+        instagram_url: instagramUrl,
+        notification_whatsapp: notificationWhatsapp,
+        is_paused: isPaused,
+        business_hours: hours,
       });
       setLogoFile(null);
       setSaved(true);
@@ -138,7 +192,23 @@ export default function BusinessSettingsPage() {
 
   return (
     <div>
-      <PageHeader title="Settings" subtitle="Business profile, logo, and where you sell" />
+      <PageHeader
+        title="Settings"
+        subtitle="Business profile, hours, pause shop, and alerts"
+        actions={
+          <Badge
+            tone={
+              profile?.verification_status === "verified"
+                ? "success"
+                : profile?.verification_status === "suspended"
+                  ? "danger"
+                  : "warning"
+            }
+          >
+            {verificationLabel(profile?.verification_status)}
+          </Badge>
+        }
+      />
       <form onSubmit={save} className="card mx-auto max-w-xl space-y-4 p-5">
         {error ? <ErrorBox message={error} /> : null}
         {saved ? (
@@ -160,7 +230,36 @@ export default function BusinessSettingsPage() {
             <input className={inputClass} value={profile.email} disabled />
           </Field>
         ) : null}
-        <Field label="Category">
+        <Field label="Phone number">
+          <input className={inputClass} value={phone} onChange={(e) => setPhone(e.target.value)} />
+        </Field>
+        <Field label="Instagram link">
+          <input
+            className={inputClass}
+            type="url"
+            value={instagramUrl}
+            onChange={(e) => setInstagramUrl(e.target.value)}
+            placeholder="https://instagram.com/yourshop"
+          />
+        </Field>
+        <Field
+          label="WhatsApp / notification number"
+          hint="Used for order alerts. WhatsApp/SMS sending needs a provider — see backend TODO."
+        >
+          <input
+            className={inputClass}
+            value={notificationWhatsapp}
+            onChange={(e) => setNotificationWhatsapp(e.target.value)}
+            placeholder="03XXXXXXXXX"
+          />
+        </Field>
+        <div className="space-y-1">
+          <Toggle checked={isPaused} onChange={setIsPaused} label="Pause shop" />
+          <p className="text-xs text-muted">
+            Hide your store from customers without deleting listings or branches.
+          </p>
+        </div>
+        <Field label="Main category">
           <select
             className={inputClass}
             value={categoryId}
@@ -174,6 +273,48 @@ export default function BusinessSettingsPage() {
             ))}
           </select>
         </Field>
+        <div className="space-y-3 rounded-xl bg-paper/70 p-4">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Business hours</h3>
+          {DAY_KEYS.map(({ key, label }) => {
+            const day = hours[key] || { open: "10:00", close: "22:00", closed: false };
+            return (
+              <div key={key} className="grid gap-2 sm:grid-cols-[1fr_auto_auto_auto] sm:items-center">
+                <p className="text-sm font-semibold">{label}</p>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(day.closed)}
+                    onChange={(e) =>
+                      setHours({
+                        ...hours,
+                        [key]: { ...day, closed: e.target.checked },
+                      })
+                    }
+                  />
+                  Closed
+                </label>
+                <input
+                  className={inputClass}
+                  type="time"
+                  disabled={day.closed}
+                  value={day.open}
+                  onChange={(e) =>
+                    setHours({ ...hours, [key]: { ...day, open: e.target.value } })
+                  }
+                />
+                <input
+                  className={inputClass}
+                  type="time"
+                  disabled={day.closed}
+                  value={day.close}
+                  onChange={(e) =>
+                    setHours({ ...hours, [key]: { ...day, close: e.target.value } })
+                  }
+                />
+              </div>
+            );
+          })}
+        </div>
         <Field label="Presence" hint="Controls whether customers find you online, in-store, or both.">
           <select
             className={inputClass}
@@ -259,6 +400,10 @@ export default function BusinessSettingsPage() {
             }}
           />
         </Field>
+        <p className="text-sm text-muted">
+          Same-day delivery fees, delivery areas, and payment accounts (bank, JazzCash, Easypaisa)
+          are configured per branch under Branches.
+        </p>
         <Button type="submit" disabled={saving}>
           {saving ? "Saving…" : "Save settings"}
         </Button>

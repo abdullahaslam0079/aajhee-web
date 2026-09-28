@@ -126,6 +126,18 @@ export type BusinessProfile = {
   category_name?: string;
   presence_mode?: string;
   online_coverage?: string;
+  verification_status?: "under_review" | "verified" | "suspended" | string;
+  phone?: string;
+  instagram_url?: string;
+  cnic_image_url?: string | null;
+  shop_photo_url?: string | null;
+  notification_whatsapp?: string;
+  is_paused?: boolean;
+  is_customer_visible?: boolean;
+  business_hours?: Record<
+    string,
+    { open?: string; close?: string; closed?: boolean }
+  >;
 };
 
 export type Branch = {
@@ -237,6 +249,8 @@ export type BranchFulfillmentSettings = {
   same_day_enabled: boolean;
   same_day_fee: string;
   same_day_max_delivery_hours: number;
+  same_day_radius_km?: string;
+  same_day_areas?: string;
   nationwide_enabled: boolean;
   nationwide_delivery_fee: string;
   nationwide_max_delivery_hours: number;
@@ -248,6 +262,8 @@ export type BranchFulfillmentSettings = {
   stripe_instructions: string;
   jazzcash_enabled: boolean;
   jazzcash_instructions: string;
+  easypaisa_enabled?: boolean;
+  easypaisa_instructions?: string;
   cash_on_pickup_enabled: boolean;
   cash_on_delivery_enabled: boolean;
   updated_at?: string;

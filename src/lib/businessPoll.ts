@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, pageResults } from "@/lib/api";
-import type { BusinessOrder } from "@/lib/types";
+import {
+  ensureNotificationPermission,
+  playMerchantAlertSound,
+  showBrowserNotification,
+} from "@/lib/merchantAlerts";
+import type { BusinessNotification, BusinessOrder } from "@/lib/types";
 
 const ACTION_STATUSES = ["pending", "payment_submitted"] as const;
 
@@ -69,14 +74,44 @@ export function useActionCounts(enabled: boolean, intervalMs = 30000) {
 export function useUnreadNotifications(enabled: boolean, intervalMs = 30000) {
   const [unread, setUnread] = useState(0);
   const mounted = useRef(true);
+  const seenIds = useRef<Set<number>>(new Set());
+  const primed = useRef(false);
 
   const refresh = useCallback(() => {
     if (!enabled) return;
-    api<{ unread_count: number }>("/api/business/notifications/unread-count", {
-      auth: true,
-    })
-      .then((data) => {
-        if (mounted.current) setUnread(data.unread_count || 0);
+    Promise.all([
+      api<{ unread_count: number }>("/api/business/notifications/unread-count", {
+        auth: true,
+      }).catch(() => ({ unread_count: 0 })),
+      api<{ results?: BusinessNotification[] } | BusinessNotification[]>(
+        "/api/business/notifications",
+        { auth: true, query: { page_size: 10 } },
+      ).catch(() => []),
+    ])
+      .then(([countData, listData]) => {
+        if (!mounted.current) return;
+        setUnread(countData.unread_count || 0);
+        const items = pageResults(listData as { results?: BusinessNotification[] });
+        const fresh = items.filter((item) => !seenIds.current.has(item.id));
+        for (const item of items) seenIds.current.add(item.id);
+        if (!primed.current) {
+          primed.current = true;
+          return;
+        }
+        const alertable = fresh.filter(
+          (item) =>
+            item.type === "business_new_order" ||
+            item.type === "business_payment_proof" ||
+            (!item.is_read && !item.read_at),
+        );
+        if (!alertable.length) return;
+        const latest = alertable[0];
+        playMerchantAlertSound();
+        const href =
+          typeof latest.data?.order_public_id === "string"
+            ? `/business/orders/${latest.data.order_public_id}`
+            : "/business/orders";
+        showBrowserNotification(latest.title || "Aajhee alert", latest.body || "", href);
       })
       .catch(() => {
         if (mounted.current) setUnread(0);
@@ -85,6 +120,7 @@ export function useUnreadNotifications(enabled: boolean, intervalMs = 30000) {
 
   useEffect(() => {
     mounted.current = true;
+    if (enabled) void ensureNotificationPermission();
     refresh();
     if (!enabled) return;
     const id = window.setInterval(refresh, intervalMs);

@@ -127,7 +127,40 @@ export default function BusinessDashboardPage() {
       <PageHeader
         title={profile?.name || "Dashboard"}
         subtitle="Sales, catalog health, and orders that need action"
+        actions={
+          profile?.verification_status ? (
+            <Badge
+              tone={
+                profile.verification_status === "verified"
+                  ? "success"
+                  : profile.verification_status === "suspended"
+                    ? "danger"
+                    : "warning"
+              }
+            >
+              {profile.verification_status === "under_review"
+                ? "Under review"
+                : profile.verification_status === "verified"
+                  ? "Verified"
+                  : profile.verification_status === "suspended"
+                    ? "Suspended"
+                    : profile.verification_status}
+            </Badge>
+          ) : null
+        }
       />
+      {profile?.verification_status && profile.verification_status !== "verified" ? (
+        <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {profile.verification_status === "suspended"
+            ? "Your shop is suspended and hidden from customers. Contact Aajhee support."
+            : "Your shop is under review. You can add listings, but customers will not see your store until an admin verifies you."}
+          {profile.is_paused ? " Pause shop is also on." : ""}
+        </p>
+      ) : profile?.is_paused ? (
+        <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Pause shop is on — your store is hidden from customers.
+        </p>
+      ) : null}
       {error ? <ErrorBox message={error} /> : null}
       {loading ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -260,7 +293,7 @@ export default function BusinessDashboardPage() {
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
-              label="Revenue (completed)"
+              label="Sales"
               value={rs(stats?.gmv)}
               hint={`${stats?.completed_orders ?? 0} completed orders`}
             />
@@ -295,9 +328,9 @@ export default function BusinessDashboardPage() {
           <section className="card mt-6 p-5">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="font-semibold">Orders & revenue</h2>
+                <h2 className="font-semibold">Orders & sales</h2>
                 <p className="text-sm text-muted">
-                  Last {days} days · {chart.rangeOrders} orders · {rs(chart.rangeGmv)} completed GMV
+                  Last {days} days · {chart.rangeOrders} orders · {rs(chart.rangeGmv)} completed sales
                 </p>
               </div>
               <div className="flex gap-2">
@@ -333,7 +366,7 @@ export default function BusinessDashboardPage() {
                   </div>
                 </div>
                 <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Completed GMV / day</p>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Completed sales / day</p>
                   <div className="flex h-28 items-end gap-0.5">
                     {series.map((point) => {
                       const gmv = Number(point.gmv) || 0;

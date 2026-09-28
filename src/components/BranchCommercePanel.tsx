@@ -24,6 +24,8 @@ const defaultFulfillment = (): BranchFulfillmentSettings => ({
   same_day_enabled: true,
   same_day_fee: "0.00",
   same_day_max_delivery_hours: 24,
+  same_day_radius_km: "15.00",
+  same_day_areas: "",
   nationwide_enabled: false,
   nationwide_delivery_fee: "300.00",
   nationwide_max_delivery_hours: 72,
@@ -35,6 +37,8 @@ const defaultFulfillment = (): BranchFulfillmentSettings => ({
   stripe_instructions: "",
   jazzcash_enabled: false,
   jazzcash_instructions: "",
+  easypaisa_enabled: false,
+  easypaisa_instructions: "",
   cash_on_pickup_enabled: true,
   cash_on_delivery_enabled: true,
 });
@@ -98,7 +102,11 @@ export function BranchCommercePanel({ branchId }: { branchId: number }) {
           ...fulfillment,
           pickup_radius_km: String(fulfillment.pickup_radius_km),
           same_day_fee: String(fulfillment.same_day_fee),
+          same_day_radius_km: String(fulfillment.same_day_radius_km ?? "15.00"),
+          same_day_areas: fulfillment.same_day_areas || "",
           nationwide_delivery_fee: String(fulfillment.nationwide_delivery_fee),
+          easypaisa_enabled: Boolean(fulfillment.easypaisa_enabled),
+          easypaisa_instructions: fulfillment.easypaisa_instructions || "",
         }),
       });
       setSaved(true);
@@ -208,7 +216,7 @@ export function BranchCommercePanel({ branchId }: { branchId: number }) {
 
         <div className="space-y-3 rounded-xl bg-paper/70 p-4">
           <Toggle
-            label="Same-day delivery (store city)"
+            label="Same-day delivery (e.g. Lahore)"
             checked={fulfillment.same_day_enabled}
             onChange={(v) => setFulfillment({ ...fulfillment, same_day_enabled: v })}
           />
@@ -217,6 +225,28 @@ export function BranchCommercePanel({ branchId }: { branchId: number }) {
               className={inputClass}
               value={fulfillment.same_day_fee}
               onChange={(e) => setFulfillment({ ...fulfillment, same_day_fee: e.target.value })}
+            />
+          </Field>
+          <Field label="Delivery radius (km)" hint="Example: 15 km within Lahore">
+            <input
+              className={inputClass}
+              value={fulfillment.same_day_radius_km || ""}
+              onChange={(e) =>
+                setFulfillment({ ...fulfillment, same_day_radius_km: e.target.value })
+              }
+            />
+          </Field>
+          <Field
+            label="Delivery areas"
+            hint="Comma-separated areas, e.g. DHA, Gulberg, Johar Town"
+          >
+            <input
+              className={inputClass}
+              value={fulfillment.same_day_areas || ""}
+              onChange={(e) =>
+                setFulfillment({ ...fulfillment, same_day_areas: e.target.value })
+              }
+              placeholder="DHA, Gulberg, Model Town"
             />
           </Field>
           <Field label="Max hours">
@@ -302,15 +332,30 @@ export function BranchCommercePanel({ branchId }: { branchId: number }) {
           <Toggle
             checked={fulfillment.jazzcash_enabled}
             onChange={(v) => setFulfillment({ ...fulfillment, jazzcash_enabled: v })}
-            label="Mobile wallet (JazzCash / Easypaisa) — customer uploads receipt at checkout"
+            label="JazzCash — customer uploads receipt at checkout"
           />
-          <Field label="Wallet instructions" hint="JazzCash / Easypaisa number">
+          <Field label="JazzCash account details" hint="Account title and JazzCash number">
             <textarea
               className={inputClass}
               rows={3}
               value={fulfillment.jazzcash_instructions}
               onChange={(e) =>
                 setFulfillment({ ...fulfillment, jazzcash_instructions: e.target.value })
+              }
+            />
+          </Field>
+          <Toggle
+            checked={Boolean(fulfillment.easypaisa_enabled)}
+            onChange={(v) => setFulfillment({ ...fulfillment, easypaisa_enabled: v })}
+            label="Easypaisa — customer uploads receipt at checkout"
+          />
+          <Field label="Easypaisa account details" hint="Account title and Easypaisa number">
+            <textarea
+              className={inputClass}
+              rows={3}
+              value={fulfillment.easypaisa_instructions || ""}
+              onChange={(e) =>
+                setFulfillment({ ...fulfillment, easypaisa_instructions: e.target.value })
               }
             />
           </Field>
