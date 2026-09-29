@@ -244,7 +244,9 @@ export default function BusinessOrderDetailPage() {
             ) : null}
             {order.delivery_snapshot?.promised_by ? (
               <p className="text-sm text-muted">
-                Promised by {formatDateTime(order.delivery_snapshot.promised_by)}
+                {order.fulfillment_type === "local_same_day"
+                  ? `Promised by end of day · ${formatDateTime(order.delivery_snapshot.promised_by)}`
+                  : `Promised by ${formatDateTime(order.delivery_snapshot.promised_by)}`}
               </p>
             ) : null}
             {order.customer_notes ? (
