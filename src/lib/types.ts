@@ -138,6 +138,8 @@ export type BusinessProfile = {
     string,
     { open?: string; close?: string; closed?: boolean }
   >;
+  rating_avg?: string;
+  rating_count?: number;
 };
 
 export type Branch = {
@@ -197,6 +199,8 @@ export type BusinessStats = {
   active_product_count: number;
   low_stock_count?: number;
   low_stock_threshold?: number;
+  rating_avg?: string;
+  rating_count?: number;
 };
 
 export type ProductGalleryImage = {
@@ -232,8 +236,40 @@ export type Product = {
   view_count?: number;
   like_count?: number;
   order_count?: number;
+  rating_avg?: string;
+  rating_count?: number;
   created_at?: string;
   updated_at?: string;
+};
+
+export type ProductReviewImage = {
+  id: number;
+  image_url: string | null;
+  sort_order: number;
+};
+
+export type ProductReview = {
+  id: number;
+  product_id: number;
+  product_name: string;
+  business_id: number;
+  business_name: string;
+  order_public_id: string;
+  order_item_id: number;
+  rating: number;
+  comment: string;
+  status: "published" | "hidden" | "flagged" | string;
+  images: ProductReviewImage[];
+  user_display_name: string;
+  merchant_reply: string;
+  merchant_replied_at: string | null;
+  flagged_at: string | null;
+  flag_reason: string;
+  verified_purchase: boolean;
+  can_edit: boolean;
+  edited_at: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export type BranchContact = {

@@ -19,6 +19,7 @@ const links = [
   { href: "/business", label: "Dashboard", icon: HomeIcon, exact: true },
   { href: "/business/orders", label: "Orders", icon: ReceiptIcon },
   { href: "/business/products", label: "Listings", icon: PackageIcon },
+  { href: "/business/reviews", label: "Reviews", icon: PackageIcon },
   { href: "/business/branches", label: "Branches", icon: StoreIcon },
   { href: "/business/notifications", label: "Alerts", icon: BellIcon },
   { href: "/business/settings", label: "Settings", icon: SettingsIcon },

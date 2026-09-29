@@ -132,6 +132,11 @@ export default function HomePage() {
                           ? `Rs ${String(p.effective_price)} · ${String(p.effective_discount_percent)}% off`
                           : `Rs ${String(p.base_price || "")}`}
                       </p>
+                      {Number(p.rating_count || 0) > 0 ? (
+                        <p className="mt-1 text-xs font-semibold text-amber-600">
+                          ★ {Number(p.rating_avg || 0).toFixed(1)} ({String(p.rating_count)})
+                        </p>
+                      ) : null}
                       <p className="mt-1 text-xs text-muted">{String(p.business_name || "")}</p>
                     </div>
                   ))}

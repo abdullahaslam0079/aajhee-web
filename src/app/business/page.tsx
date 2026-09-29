@@ -291,11 +291,25 @@ export default function BusinessDashboardPage() {
             </section>
           ) : null}
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <StatCard
               label="Sales"
               value={rs(stats?.gmv)}
               hint={`${stats?.completed_orders ?? 0} completed orders`}
+            />
+            <StatCard
+              label="Store rating"
+              value={
+                Number(stats?.rating_count || 0) > 0
+                  ? `★ ${Number(stats?.rating_avg || 0).toFixed(1)}`
+                  : "—"
+              }
+              hint={
+                Number(stats?.rating_count || 0) > 0
+                  ? `${stats?.rating_count} reviews`
+                  : "No reviews yet"
+              }
+              href="/business/reviews"
             />
             <StatCard
               label="Needs action"
