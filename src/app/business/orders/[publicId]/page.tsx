@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -30,6 +30,8 @@ import { rs } from "@/lib/format";
 import { whatsappHref } from "@/lib/merchantAlerts";
 import type { BusinessOrder, OrderStatus } from "@/lib/types";
 
+const DETAIL_POLL_MS = 8000;
+
 export default function BusinessOrderDetailPage() {
   const params = useParams<{ publicId: string }>();
   const publicId = params.publicId;
@@ -39,16 +41,33 @@ export default function BusinessOrderDetailPage() {
   const [cancelReason, setCancelReason] = useState("");
   const [reviewNote, setReviewNote] = useState("");
 
-  function load() {
+  const load = useCallback(() => {
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+      return;
+    }
     api<BusinessOrder>(`/api/business/orders/${publicId}`, { auth: true })
-      .then(setOrder)
+      .then((data) => {
+        setOrder(data);
+        setError("");
+      })
       .catch((err) => setError(errorMessage(err)));
-  }
+  }, [publicId]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [publicId]);
+    const id = window.setInterval(load, DETAIL_POLL_MS);
+    const onFocus = () => load();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [load]);
 
   async function setStatus(status: OrderStatus) {
     if (status === "cancelled" && !cancelReason.trim()) {

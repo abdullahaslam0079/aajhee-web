@@ -66,6 +66,9 @@ export default function OrdersClient() {
   }, [searchInput]);
 
   const load = useCallback(() => {
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+      return;
+    }
     api<BusinessOrder[] | { results: BusinessOrder[]; count?: number; page?: number; page_size?: number }>(
       "/api/business/orders",
       {
@@ -91,12 +94,17 @@ export default function OrdersClient() {
 
   useEffect(() => {
     load();
-    const id = window.setInterval(load, 30000);
+    const id = window.setInterval(load, 15000);
     const onFocus = () => load();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") load();
+    };
     window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       window.clearInterval(id);
       window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [load]);
 
