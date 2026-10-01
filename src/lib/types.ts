@@ -51,6 +51,19 @@ export type Offer = {
   featured_branch?: { id: number; name: string } | null;
 };
 
+/** Slim product preview on consumer map/store branch cards (max 8). */
+export type BranchTopProduct = {
+  id: number;
+  name: string;
+  image_url?: string | null;
+  base_price: number | string;
+  sale_price?: number | string | null;
+  discount_percent?: number | string | null;
+  effective_price?: number | string | null;
+  effective_discount_percent?: number | string | null;
+  has_discount?: boolean;
+};
+
 export type MapBranch = {
   id: number;
   business_id: number;
@@ -71,6 +84,12 @@ export type MapBranch = {
     is_online?: boolean;
   } | null;
   distance_km?: number | null;
+  rating_avg?: number | null;
+  rating_count?: number | null;
+  /** Total active catalog products for this branch. */
+  products_count?: number;
+  /** Up to 8 preview products from the map/store list API. */
+  top_products?: BranchTopProduct[];
 };
 
 export type Address = {
