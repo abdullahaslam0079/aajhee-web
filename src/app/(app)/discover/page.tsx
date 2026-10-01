@@ -23,7 +23,7 @@ export default function DiscoverPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    api<CategoryTreeNode[]>("/api/categories/tree")
+    api<CategoryTreeNode[]>("/api/categories/tree", { query: { populated: "1" } })
       .then((data) => setTree(Array.isArray(data) ? data : []))
       .catch(() => setTree([]));
   }, []);
