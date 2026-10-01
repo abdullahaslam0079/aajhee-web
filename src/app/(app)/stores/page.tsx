@@ -1,22 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChannelFilters } from "@/components/ChannelFilters";
+import { ChannelFilters, rootCategoryId } from "@/components/ChannelFilters";
 import { HomeToolbar } from "@/components/HomeToolbar";
 import { StoreCard } from "@/components/StoreCard";
 import { Empty, ErrorBox, Skeleton } from "@/components/ui";
 import { api, pageResults } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
 import { locationQuery } from "@/lib/location";
-import type { MapBranch, Paginated } from "@/lib/types";
+import type { CategoryTreeNode, MapBranch, Paginated } from "@/lib/types";
 import { useLocation } from "@/lib/useLocation";
 
 export default function StoresPage() {
   const loc = useLocation();
+  const [tree, setTree] = useState<CategoryTreeNode[]>([]);
   const [branches, setBranches] = useState<MapBranch[]>([]);
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    api<CategoryTreeNode[]>("/api/categories/tree")
+      .then((data) => setTree(Array.isArray(data) ? data : []))
+      .catch(() => setTree([]));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -24,8 +31,13 @@ export default function StoresPage() {
       setLoading(true);
       setError("");
       try {
+        const businessCategoryId = rootCategoryId(tree, categoryId);
         const data = await api<Paginated<MapBranch>>("/api/map/branches", {
-          query: { ...locationQuery(loc), page_size: 40, category_id: categoryId },
+          query: {
+            ...locationQuery(loc),
+            page_size: 40,
+            category_id: businessCategoryId,
+          },
         });
         if (!cancelled) setBranches(pageResults(data));
       } catch (err) {
@@ -38,14 +50,21 @@ export default function StoresPage() {
     return () => {
       cancelled = true;
     };
-  }, [loc, categoryId]);
+  }, [loc, categoryId, tree]);
 
   return (
     <div>
       <HomeToolbar />
       <h1 className="mb-4 font-display text-2xl font-semibold tracking-tight">Stores</h1>
       <div className="mb-4">
-        <ChannelFilters value="all" onChange={() => undefined} showChannels={false} categoryId={categoryId} onCategory={setCategoryId} />
+        <ChannelFilters
+          value="all"
+          onChange={() => undefined}
+          showChannels={false}
+          categories={tree}
+          categoryId={categoryId}
+          onCategory={setCategoryId}
+        />
       </div>
       {error ? <ErrorBox message={error} /> : null}
       {loading ? (

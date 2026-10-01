@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChannelFilters } from "@/components/ChannelFilters";
+import { ChannelFilters, rootCategoryId } from "@/components/ChannelFilters";
 import { DiscoverMap } from "@/components/DiscoverMap";
 import { HomeToolbar } from "@/components/HomeToolbar";
 import { StoreCard } from "@/components/StoreCard";
@@ -10,20 +10,31 @@ import { Empty, ErrorBox } from "@/components/ui";
 import { api, pageResults } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
 import { locationQuery, requestBrowserLocation } from "@/lib/location";
-import type { MapBranch, Paginated } from "@/lib/types";
+import type { CategoryTreeNode, MapBranch, Paginated } from "@/lib/types";
 import { useLocation } from "@/lib/useLocation";
 
 export default function DiscoverPage() {
   const loc = useLocation();
   const router = useRouter();
+  const [tree, setTree] = useState<CategoryTreeNode[]>([]);
   const [branches, setBranches] = useState<MapBranch[]>([]);
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    api<CategoryTreeNode[]>("/api/categories/tree")
+      .then((data) => setTree(Array.isArray(data) ? data : []))
+      .catch(() => setTree([]));
+  }, []);
+
   const query = useMemo(
-    () => ({ ...locationQuery(loc), page_size: 80, category_id: categoryId }),
-    [loc, categoryId],
+    () => ({
+      ...locationQuery(loc),
+      page_size: 80,
+      category_id: rootCategoryId(tree, categoryId),
+    }),
+    [loc, categoryId, tree],
   );
 
   const load = useCallback(async () => {
@@ -51,7 +62,14 @@ export default function DiscoverPage() {
         <p className="text-sm text-muted">Stores with live deals around you</p>
       </div>
       <div className="mb-4">
-        <ChannelFilters value="all" onChange={() => undefined} showChannels={false} categoryId={categoryId} onCategory={setCategoryId} />
+        <ChannelFilters
+          value="all"
+          onChange={() => undefined}
+          showChannels={false}
+          categories={tree}
+          categoryId={categoryId}
+          onCategory={setCategoryId}
+        />
       </div>
       {error ? <ErrorBox message={error} onRetry={load} /> : null}
       <div className="relative">

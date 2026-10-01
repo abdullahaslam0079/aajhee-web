@@ -14,18 +14,19 @@ import {
   Toggle,
   inputClass,
 } from "@/components/ui";
+import { CategoryTreePicker } from "@/components/CategoryTreePicker";
 import { api } from "@/lib/api";
 import { compressImageFiles } from "@/lib/compressImage";
 import { errorMessage } from "@/lib/errors";
 import { rs } from "@/lib/format";
-import type { Branch, Category, Product } from "@/lib/types";
+import type { Branch, CategoryTreeNode, Product } from "@/lib/types";
 
 export default function EditProductPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = Number(params.id);
   const [product, setProduct] = useState<Product | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<CategoryTreeNode[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState("");
@@ -69,7 +70,7 @@ export default function EditProductPage() {
 
   useEffect(() => {
     load();
-    api<Category[]>("/api/categories")
+    api<CategoryTreeNode[]>("/api/categories/tree")
       .then((data) => setCategories(Array.isArray(data) ? data : []))
       .catch(() => undefined);
     api<Branch[]>("/api/business/branches", { auth: true })
@@ -291,18 +292,14 @@ export default function EditProductPage() {
           </Field>
         </div>
         <Field label="Category">
-          <select
-            className={inputClass}
+          <CategoryTreePicker
+            tree={categories}
             value={form.category_id}
-            onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+            preferLeaves
             required
-          >
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+            placeholder="Select category"
+            onChange={(v) => setForm({ ...form, category_id: v })}
+          />
         </Field>
         <Field label="Short description">
           <textarea

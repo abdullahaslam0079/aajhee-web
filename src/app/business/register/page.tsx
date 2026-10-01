@@ -4,15 +4,16 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthCard, MERCHANT_AUTH_BRANDING } from "@/components/AuthCard";
+import { CategoryTreePicker } from "@/components/CategoryTreePicker";
 import { Button, ErrorBox, Field, inputClass } from "@/components/ui";
 import { api } from "@/lib/api";
 import { compressImageFiles } from "@/lib/compressImage";
 import { errorMessage } from "@/lib/errors";
-import type { Category } from "@/lib/types";
+import type { CategoryTreeNode } from "@/lib/types";
 
 export default function BusinessRegisterPage() {
   const router = useRouter();
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<CategoryTreeNode[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -26,9 +27,9 @@ export default function BusinessRegisterPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    api<Category[] | { results: Category[] }>("/api/categories")
+    api<CategoryTreeNode[]>("/api/categories/tree")
       .then((data) => {
-        const list = Array.isArray(data) ? data : data.results || [];
+        const list = Array.isArray(data) ? data : [];
         setCategories(list);
         if (list[0]) setCategoryId(list[0].id);
       })
@@ -81,14 +82,15 @@ export default function BusinessRegisterPage() {
         <Field label="Business name">
           <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} required />
         </Field>
-        <Field label="Main category">
-          <select className={inputClass} value={categoryId} onChange={(e) => setCategoryId(Number(e.target.value))} required>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
+        <Field label="Main category" hint="You can add more verticals later in settings.">
+          <CategoryTreePicker
+            tree={categories}
+            value={categoryId}
+            rootsOnly
+            required
+            placeholder="Select main category"
+            onChange={(v) => setCategoryId(v ? Number(v) : "")}
+          />
         </Field>
         <Field label="Phone number">
           <input

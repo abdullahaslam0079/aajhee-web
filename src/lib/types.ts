@@ -11,6 +11,14 @@ export type Paginated<T> = {
 export type Category = {
   id: number;
   name: string;
+  slug?: string;
+  parent_id?: number | null;
+  sort_order?: number;
+  is_active?: boolean;
+};
+
+export type CategoryTreeNode = Category & {
+  children?: CategoryTreeNode[];
 };
 
 export type Offer = {
@@ -123,6 +131,7 @@ export type BusinessProfile = {
   logo_url?: string | null;
   category?: Category | number;
   category_id?: number;
+  category_ids?: number[];
   category_name?: string;
   presence_mode?: string;
   online_coverage?: string;

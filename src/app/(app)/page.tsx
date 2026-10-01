@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ChannelFilters } from "@/components/ChannelFilters";
+import { ChannelFilters, rootCategoryId } from "@/components/ChannelFilters";
 import { HomeToolbar } from "@/components/HomeToolbar";
 import { ArrowRightIcon, SearchIcon } from "@/components/icons";
 import { OfferCard } from "@/components/OfferCard";
@@ -10,11 +10,12 @@ import { Empty, ErrorBox, SectionHeader, Skeleton } from "@/components/ui";
 import { api, pageResults } from "@/lib/api";
 import { errorMessage } from "@/lib/errors";
 import { locationQuery } from "@/lib/location";
-import type { Channel, Offer, Paginated } from "@/lib/types";
+import type { CategoryTreeNode, Channel, Offer, Paginated } from "@/lib/types";
 import { useLocation } from "@/lib/useLocation";
 
 export default function HomePage() {
   const loc = useLocation();
+  const [tree, setTree] = useState<CategoryTreeNode[]>([]);
   const [picks, setPicks] = useState<Offer[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [channel, setChannel] = useState<Channel>("all");
@@ -28,6 +29,12 @@ export default function HomePage() {
     offers: Array<Record<string, unknown>>;
     trending: Array<Record<string, unknown>>;
   } | null>(null);
+
+  useEffect(() => {
+    api<CategoryTreeNode[]>("/api/categories/tree")
+      .then((data) => setTree(Array.isArray(data) ? data : []))
+      .catch(() => setTree([]));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,7 +86,11 @@ export default function HomePage() {
       setError("");
       try {
         const all = await api<Paginated<Offer>>("/api/offers", {
-          query: { ...locationQuery(loc), page_size: 40, category_id: categoryId },
+          query: {
+            ...locationQuery(loc),
+            page_size: 40,
+            category_id: rootCategoryId(tree, categoryId),
+          },
         });
         if (!cancelled) setOffers(pageResults(all));
       } catch (err) {
@@ -92,7 +103,7 @@ export default function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, [loc.latitude, loc.longitude, categoryId]);
+  }, [loc.latitude, loc.longitude, categoryId, tree]);
 
   const visible = useMemo(() => {
     if (channel === "all") return offers;
@@ -183,6 +194,7 @@ export default function HomePage() {
         <ChannelFilters
           value={channel}
           onChange={setChannel}
+          categories={tree}
           categoryId={categoryId}
           onCategory={setCategoryId}
         />

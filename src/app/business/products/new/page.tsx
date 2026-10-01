@@ -3,16 +3,17 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, ErrorBox, Field, PageHeader, Toggle, inputClass } from "@/components/ui";
+import { CategoryTreePicker } from "@/components/CategoryTreePicker";
 import { api } from "@/lib/api";
 import { compressImageFiles } from "@/lib/compressImage";
 import { errorMessage } from "@/lib/errors";
-import type { Branch, Category } from "@/lib/types";
+import type { Branch, CategoryTreeNode } from "@/lib/types";
 
 export default function NewProductPage() {
   const router = useRouter();
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<CategoryTreeNode[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [files, setFiles] = useState<File[]>([]);
   const [form, setForm] = useState({
@@ -28,11 +29,13 @@ export default function NewProductPage() {
   });
 
   useEffect(() => {
-    api<Category[]>("/api/categories")
+    api<CategoryTreeNode[]>("/api/categories/tree")
       .then((data) => {
         const list = Array.isArray(data) ? data : [];
         setCategories(list);
-        if (list[0]) setForm((f) => ({ ...f, category_id: String(list[0].id) }));
+        const firstLeaf =
+          list.flatMap((r) => (r.children?.length ? r.children : [r]))[0] || list[0];
+        if (firstLeaf) setForm((f) => ({ ...f, category_id: String(firstLeaf.id) }));
       })
       .catch(() => undefined);
     api<Branch[]>("/api/business/branches", { auth: true })
@@ -132,18 +135,14 @@ export default function NewProductPage() {
           </Field>
         </div>
         <Field label="Category">
-          <select
-            className={inputClass}
+          <CategoryTreePicker
+            tree={categories}
             value={form.category_id}
-            onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+            preferLeaves
             required
-          >
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+            placeholder="Select category"
+            onChange={(v) => setForm({ ...form, category_id: v })}
+          />
         </Field>
         <Field label="Short description">
           <textarea

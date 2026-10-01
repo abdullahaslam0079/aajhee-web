@@ -11,10 +11,11 @@ import {
   Toggle,
   inputClass,
 } from "@/components/ui";
+import { CategoryTreePicker } from "@/components/CategoryTreePicker";
 import { api } from "@/lib/api";
 import { compressImageFiles } from "@/lib/compressImage";
 import { errorMessage } from "@/lib/errors";
-import type { BusinessProfile, Category } from "@/lib/types";
+import type { BusinessProfile, CategoryTreeNode } from "@/lib/types";
 
 type PresencePayload = {
   presence_mode?: string;
@@ -54,7 +55,7 @@ function verificationLabel(status?: string) {
 
 export default function BusinessSettingsPage() {
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<CategoryTreeNode[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [name, setName] = useState("");
@@ -64,6 +65,7 @@ export default function BusinessSettingsPage() {
   const [isPaused, setIsPaused] = useState(false);
   const [hours, setHours] = useState<Record<string, DayHours>>(defaultHours());
   const [categoryId, setCategoryId] = useState("");
+  const [categoryIds, setCategoryIds] = useState<number[]>([]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [presenceMode, setPresenceMode] = useState("hybrid");
   const [onlineCoverage, setOnlineCoverage] = useState("city");
@@ -78,7 +80,7 @@ export default function BusinessSettingsPage() {
   useEffect(() => {
     Promise.all([
       api<BusinessProfile>("/api/business/profile", { auth: true }),
-      api<Category[]>("/api/categories").catch(() => []),
+      api<CategoryTreeNode[]>("/api/categories/tree").catch(() => []),
       api<PresencePayload | null>("/api/business/presence", { auth: true }).catch(() => null),
       api<Country[]>("/api/countries").catch(() => []),
     ])
@@ -99,6 +101,11 @@ export default function BusinessSettingsPage() {
                 ? String(p.category)
                 : "";
         setCategoryId(catId);
+        const ids =
+          p.category_ids ||
+          presence?.category_ids ||
+          (catId ? [Number(catId)] : []);
+        setCategoryIds(ids.map(Number).filter(Boolean));
         setCategories(Array.isArray(cats) ? cats : []);
         setCountries(Array.isArray(countryList) ? countryList : []);
         setPresenceMode(presence?.presence_mode || p.presence_mode || "hybrid");
@@ -157,7 +164,14 @@ export default function BusinessSettingsPage() {
           online_coverage: onlineCoverage,
           primary_country_id: countryId ? Number(countryId) : null,
           primary_city_id: cityId ? Number(cityId) : null,
-          category_ids: categoryId ? [Number(categoryId)] : [],
+          category_ids: (() => {
+            const primary = categoryId ? Number(categoryId) : null;
+            const merged = [
+              ...(primary ? [primary] : []),
+              ...categoryIds.filter((id) => id !== primary),
+            ].slice(0, 4);
+            return merged;
+          })(),
         }),
       });
       setProfile({
@@ -260,18 +274,54 @@ export default function BusinessSettingsPage() {
           </p>
         </div>
         <Field label="Main category">
-          <select
-            className={inputClass}
+          <CategoryTreePicker
+            tree={categories}
             value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-          >
-            <option value="">Select category</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+            rootsOnly
+            placeholder="Select category"
+            onChange={(v) => {
+              setCategoryId(v);
+              const id = v ? Number(v) : null;
+              setCategoryIds((prev) => {
+                const without = prev.filter((x) => x !== id);
+                return id ? [id, ...without].slice(0, 4) : without;
+              });
+            }}
+          />
+        </Field>
+        <Field label="Additional verticals" hint="Optional. Up to 3 extra root categories.">
+          <div className="space-y-2 rounded-xl border border-line p-3">
+            {categories.map((cat) => {
+              const isPrimary = String(cat.id) === categoryId;
+              const checked = categoryIds.includes(cat.id) || isPrimary;
+              return (
+                <label key={cat.id} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={isPrimary}
+                    onChange={(e) => {
+                      if (isPrimary) return;
+                      setCategoryIds((prev) => {
+                        if (e.target.checked) {
+                          const next = [...prev.filter((id) => id !== cat.id), cat.id];
+                          const primary = categoryId ? Number(categoryId) : null;
+                          const withPrimary =
+                            primary && !next.includes(primary) ? [primary, ...next] : next;
+                          return withPrimary.slice(0, 4);
+                        }
+                        return prev.filter((id) => id !== cat.id);
+                      });
+                    }}
+                  />
+                  <span>
+                    {cat.name}
+                    {isPrimary ? " (primary)" : ""}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
         </Field>
         <div className="space-y-3 rounded-xl bg-paper/70 p-4">
           <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Business hours</h3>
