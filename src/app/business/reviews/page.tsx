@@ -140,6 +140,7 @@ export default function BusinessReviewsPage() {
                 <p className="font-semibold">{review.product_name}</p>
                 <p className="text-xs text-muted">
                   {review.user_display_name} · {formatDateTime(review.created_at)}
+                  {review.branch_name ? ` · ${review.branch_name}` : ""}
                 </p>
                 <div className="mt-1">
                   <Stars rating={review.rating} />

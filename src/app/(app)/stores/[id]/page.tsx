@@ -78,6 +78,14 @@ export default function StoreDetailPage() {
           <div>
             <h1 className="font-display text-2xl font-semibold tracking-tight">{branch?.business_name || "Store"}</h1>
             <p className="text-sm text-muted">{branch?.name}</p>
+            {Number(branch?.rating_count || 0) > 0 ? (
+              <p className="mt-1 text-sm font-semibold text-ink">
+                ★ {Number(branch?.rating_avg || 0).toFixed(1)}
+                <span className="ml-1 font-normal text-muted">
+                  ({branch?.rating_count} reviews)
+                </span>
+              </p>
+            ) : null}
             <p className="mt-1 text-sm text-muted">
               {branch?.formattedAddress}
               {branch?.distance_km != null ? ` · ${km(branch.distance_km)}` : ""}
